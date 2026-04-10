@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VINOM · Générateur Commissions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--burgundy:#6B1A2A;--burgundy-light:#8B2A3E;--gold:#C9973A;--gold-light:#E8B95A;--cream:#F7F2EA;--cream-dark:#EDE5D5;--ink:#1A1410;--ink-light:#4A3F35;--ink-muted:#8A7A6A;--success:#2E7D4F;--error:#C0392B;--white:#FDFAF5}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+  .app{max-width:900px;margin:0 auto;padding:32px 24px 60px}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:36px;padding-bottom:24px;border-bottom:1.5px solid var(--cream-dark)}
+  .logo{font-family:'DM Serif Display',serif;font-size:26px;color:var(--burgundy)}.logo span{color:var(--gold)}
+  .subtitle{font-size:12px;color:var(--ink-muted);font-family:'DM Mono',monospace;margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
+  .badge{background:var(--burgundy);color:var(--cream);font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:2px;letter-spacing:.8px}
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+  .step-card{background:var(--white);border:1.5px solid var(--cream-dark);border-radius:6px;padding:20px;position:relative;transition:border-color .2s}
+  .step-card.done{border-color:var(--success);background:#F0FAF4}
+  .step-num{font-family:'DM Serif Display',serif;font-size:36px;color:var(--cream-dark);position:absolute;top:12px;right:16px;line-height:1}
+  .step-card.done .step-num{color:rgba(46,125,79,.2)}
+  .step-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-muted);font-family:'DM Mono',monospace;margin-bottom:6px}
+  .step-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:10px}
+  .drop-zone{border:1.5px dashed var(--cream-dark);border-radius:4px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
+  .drop-zone.has-files{border-color:var(--success);background:rgba(46,125,79,.05)}
+  .drop-icon{font-size:20px}.drop-text{font-size:11px;color:var(--ink-muted);line-height:1.3}.drop-hint{font-size:10px;color:var(--ink-muted);font-family:'DM Mono',monospace}
+  input[type=file]{display:none}
+  .file-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+  .file-item{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--cream-dark);border-radius:3px;padding:5px 8px;font-size:11px}
+  .fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-family:'DM Mono',monospace}
+  .fi-remove{cursor:pointer;color:var(--ink-muted);font-size:13px;transition:color .15s}.fi-remove:hover{color:var(--error)}
+  .quarter-input{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .quarter-input select,.quarter-input input{border:1.5px solid var(--cream-dark);border-radius:4px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
+  .quarter-input select:focus,.quarter-input input:focus{border-color:var(--gold)}
+  .quarter-input select{width:80px}.quarter-input input{width:80px}
+  .generate-wrap{margin:24px 0;display:flex;align-items:center;gap:16px}
+  .btn-generate{background:var(--burgundy);color:var(--cream);border:none;border-radius:4px;padding:14px 32px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:10px}
+  .btn-generate:hover{background:var(--burgundy-light)}.btn-generate:disabled{opacity:.45;cursor:not-allowed}
+  .status-bar{flex:1;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-muted);line-height:1.5}
+  .status-bar.processing{color:var(--gold)}.status-bar.success{color:var(--success)}.status-bar.error{color:var(--error)}
+  .progress-wrap{height:3px;background:var(--cream-dark);border-radius:2px;margin-bottom:20px;overflow:hidden;display:none}
+  .progress-wrap.visible{display:block}
+  .progress-bar{height:100%;background:linear-gradient(90deg,var(--burgundy),var(--gold));border-radius:2px;transition:width .4s;width:0%}
+  .results-section{display:none;margin-top:8px}.results-section.visible{display:block}
+  .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .results-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--burgundy)}
+  .results-meta{font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-muted)}
+  .download-btns{display:flex;gap:8px}
+  .btn-dl{background:var(--gold);color:var(--ink);border:none;border-radius:3px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;font-family:'DM Sans',sans-serif}
+  .btn-dl:hover{background:var(--gold-light)}
+  .btn-dl.secondary{background:var(--white);border:1.5px solid var(--cream-dark);color:var(--ink-light)}.btn-dl.secondary:hover{border-color:var(--gold)}
+  .table-wrap{overflow-x:auto;border:1.5px solid var(--cream-dark);border-radius:6px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead tr{background:var(--burgundy);color:var(--cream)}
+  thead th{padding:10px 12px;text-align:left;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+  tbody tr{border-bottom:1px solid var(--cream-dark);transition:background .1s}tbody tr:hover{background:rgba(201,151,58,.06)}
+  td{padding:8px 12px;vertical-align:middle;color:var(--ink)}
+  td.mono{font-family:'DM Mono',monospace;font-size:11px}td.num{text-align:right;font-family:'DM Mono',monospace}
+  td.pos{color:var(--success)}td.neg{color:var(--error)}
+  .fb{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-family:'DM Mono',monospace;white-space:nowrap}
+  .tfoot-row td{background:var(--cream-dark);font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
+  .warn-box{margin-top:12px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:12px 16px;font-size:12px}
+  .warn-box h4{font-size:11px;text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:.6px;color:#8B6914;margin-bottom:6px}
+  .warn-box ul{padding-left:16px}.warn-box li{color:var(--ink-light);margin-bottom:3px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  hr.div{border:none;border-top:1.5px solid var(--cream-dark);margin:20px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div><div class="logo">VINOM <span>×</span> Commissions</div><div class="subtitle">Générateur de relevé trimestriel — AAA</div></div>
+    <div class="badge">v1.0</div>
+  </div>
+
+  <div class="steps">
+    <div class="step-card" id="card-pdfs">
+      <div class="step-num">1</div>
+      <div class="step-label">Étape 1</div>
+      <div class="step-title">Relevés fournisseurs (PDF)</div>
+      <div class="drop-zone" id="drop-pdfs" onclick="document.getElementById('input-pdfs').click()">
+        <div class="drop-icon">📄</div>
+        <div class="drop-text">Déposer les PDF ici<br>ou cliquer pour sélectionner</div>
+        <div class="drop-hint">Plusieurs fichiers acceptés</div>
+      </div>
+      <input type="file" id="input-pdfs" accept=".pdf" multiple>
+      <div class="file-list" id="list-pdfs"></div>
+    </div>
+    <div class="step-card" id="card-excel">
+      <div class="step-num">2</div>
+      <div class="step-label">Étape 2</div>
+      <div class="step-title">Liste clients / sous-agents (Excel)</div>
+      <div class="drop-zone" id="drop-excel" onclick="document.getElementById('input-excel').click()">
+        <div class="drop-icon">📊</div>
+        <div class="drop-text">Déposer l'Excel ici<br>ou cliquer pour sélectionner</div>
+        <div class="drop-hint">Liste_clients_par_sous_agent.xlsx</div>
+      </div>
+      <input type="file" id="input-excel" accept=".xlsx,.xls">
+      <div class="file-list" id="list-excel"></div>
+      <div class="quarter-input">
+        <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
+        <input type="number" id="inp-y" value="2026" min="2020" max="2035">
+      </div>
+    </div>
+  </div>
+
+  <div class="generate-wrap">
+    <button class="btn-generate" id="btn-gen" onclick="generate()" disabled><span>⚡</span> Générer le tableau</button>
+    <div class="status-bar" id="status">Chargez les fichiers pour commencer.</div>
+  </div>
+  <div class="progress-wrap" id="pw"><div class="progress-bar" id="pb"></div></div>
+
+  <div class="results-section" id="results">
+    <hr class="div">
+    <div class="results-header">
+      <div><div class="results-title">Relevé des commissions</div><div class="results-meta" id="rmeta"></div></div>
+      <div class="download-btns">
+        <button class="btn-dl secondary" onclick="dlCSV()">⬇ CSV</button>
+        <button class="btn-dl" onclick="dlXLSX()">⬇ Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fournisseur</th><th>N° Client</th><th>Client</th><th>Agent</th><th>Date</th><th>N° Pièce</th><th>Montant HT</th><th>Taux</th><th>Commission HT</th></tr></thead>
+        <tbody id="rtbody"></tbody>
+        <tfoot id="rtfoot"></tfoot>
+      </table>
+    </div>
+    <div id="warns"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let pdfs=[],xlsFile=null,rows=[];
+const CL=['#6B1A2A','#C9973A','#2E7D4F','#1A478A','#7B3FA0','#B05C00'];
+const CM={};let CI=0;
+function gc(n){if(!CM[n])CM[n]=CL[CI++%CL.length];return CM[n];}
+
+function setupDZ(did,iid,fn){
+  const z=document.getElementById(did);
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover')});
+  z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');fn([...e.dataTransfer.files])});
+  document.getElementById(iid).addEventListener('change',e=>fn([...e.target.files]));
+}
+
+function rl(cid,files,rfn){
+  const el=document.getElementById(cid);el.innerHTML='';
+  files.forEach((f,i)=>{const d=document.createElement('div');d.className='file-item';d.innerHTML=`<span>${f.name.endsWith('.pdf')?'📄':'📊'}</span><span class="fi-name">${f.name}</span><span class="fi-remove" onclick="${rfn}(${i})">✕</span>`;el.appendChild(d)});
+}
+function rp(i){pdfs.splice(i,1);rl('list-pdfs',pdfs,'rp');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfs.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfs.length>0);chk();}
+function rx(){xlsFile=null;rl('list-excel',[],()=>{});document.getElementById('drop-excel').classList.remove('has-files');document.getElementById('card-excel').classList.remove('done');chk();}
+
+setupDZ('drop-pdfs','input-pdfs',f=>{pdfs=[...pdfs,...f.filter(x=>x.name.endsWith('.pdf'))];rl('list-pdfs',pdfs,'rp');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfs.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfs.length>0);chk();});
+setupDZ('drop-excel','input-excel',f=>{xlsFile=f[0]||null;if(xlsFile){rl('list-excel',[xlsFile],'rx');document.getElementById('drop-excel').classList.add('has-files');document.getElementById('card-excel').classList.add('done');}chk();});
+
+function chk(){const ok=pdfs.length>0&&xlsFile;document.getElementById('btn-gen').disabled=!ok;ss(ok?'Prêt — cliquez sur "Générer le tableau".':'Chargez les fichiers pour commencer.','');}
+function ss(m,c){const e=document.getElementById('status');e.textContent=m;e.className='status-bar '+(c||'');}
+function sp(p){document.getElementById('pw').classList.toggle('visible',p>0&&p<100);document.getElementById('pb').style.width=p+'%';}
+
+async function readXls(){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{const wb=XLSX.read(e.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const d=XLSX.utils.sheet_to_json(ws,{header:1});
+      const m={};for(let i=1;i<d.length;i++){const row=d[i];const ag=(row[1]||'').toString().trim();const n1=(row[3]||'').toString().trim().toUpperCase();const rs=(row[4]||'').toString().trim().toUpperCase();if(n1)m[n1]=ag;if(rs&&rs!==n1)m[rs]=ag;}res(m);}catch(err){rej(err);}
+    };r.readAsArrayBuffer(xlsFile);
+  });
+}
+
+async function rb64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+
+async function exPdf(b64,fn){
+  const prompt=`Fichier: ${fn}. Extrais TOUTES les lignes de commissions. Retourne UNIQUEMENT un JSON valide (pas de markdown):
+[{"fournisseur":"...","n_client":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":10,"commission_ht":12.35}]
+Règles: inclure avoirs (négatifs). Exclure lignes montant_ht=0 ET commission_ht=0. taux=nombre (10 pour 10%). Si vide: []. UNIQUEMENT le JSON.`;
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},{type:"text",text:prompt}]}]})});
+  if(!r.ok)throw new Error(`API ${r.status}`);
+  const d=await r.json();
+  const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  return JSON.parse(t.replace(/```json|```/g,'').trim());
+}
+
+function fa(cn,m){const k=cn.toUpperCase().trim();if(m[k])return m[k];for(const[key,v]of Object.entries(m)){if(key.length>=5&&(key.includes(k.substring(0,8))||k.includes(key.substring(0,8))))return v;}return '⚠ non trouvé';}
+
+async function generate(){
+  const btn=document.getElementById('btn-gen');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Analyse en cours…';
+  document.getElementById('results').classList.remove('visible');document.getElementById('warns').innerHTML='';sp(5);
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  try{
+    ss('Lecture liste clients…','processing');const cm=await readXls();sp(15);
+    const ar=[],wr=[];
+    for(let i=0;i<pdfs.length;i++){
+      const f=pdfs[i];ss(`Extraction ${i+1}/${pdfs.length} : ${f.name}`,'processing');sp(15+Math.round(i/pdfs.length*65));
+      try{const b=await rb64(f);const rx=await exPdf(b,f.name);rx.forEach(r=>{const ag=fa(r.client,cm);if(ag==='⚠ non trouvé')wr.push(`Client non trouvé : "${r.client}" (${r.fournisseur})`);ar.push({...r,agent:ag});});}
+      catch(e){wr.push(`${f.name} : erreur — ${e.message}`);}
+    }
+    sp(90);rows=ar;renderT(ar,q,y);
+    if(wr.length){const b=document.createElement('div');b.className='warn-box';b.innerHTML=`<h4>⚠ Points à vérifier (${wr.length})</h4><ul>${wr.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('warns').appendChild(b);}
+    sp(100);setTimeout(()=>sp(0),600);ss(`✓ ${ar.length} lignes générées — ${q} ${y}`,'success');document.getElementById('results').classList.add('visible');
+  }catch(e){ss('Erreur : '+e.message,'error');sp(0);}
+  btn.disabled=false;btn.innerHTML='<span>⚡</span> Générer le tableau';
+}
+
+function renderT(rs,q,y){
+  const tb=document.getElementById('rtbody'),tf=document.getElementById('rtfoot');tb.innerHTML='';tf.innerHTML='';
+  let tH=0,tC=0;
+  rs.forEach(r=>{const c=gc(r.fournisseur);const ng=r.montant_ht<0;const tr=document.createElement('tr');tr.innerHTML=`<td><span class="fb" style="background:${c}20;color:${c};border:1px solid ${c}40">${r.fournisseur}</span></td><td class="mono">${r.n_client||'—'}</td><td>${r.client}</td><td>${r.agent}</td><td class="mono">${r.date||'—'}</td><td class="mono">${r.n_piece||'—'}</td><td class="num ${ng?'neg':''}">${fm(r.montant_ht)} €</td><td class="num">${r.taux}%</td><td class="num ${ng?'neg':'pos'}">${fm(r.commission_ht)} €</td>`;tb.appendChild(tr);tH+=r.montant_ht||0;tC+=r.commission_ht||0;});
+  const tr=document.createElement('tr');tr.className='tfoot-row';tr.innerHTML=`<td colspan="6" style="text-align:right;padding-right:12px">TOTAL ${q} ${y}</td><td class="num">${fm(tH)} €</td><td></td><td class="num" style="color:var(--success)">${fm(tC)} €</td>`;tf.appendChild(tr);
+  document.getElementById('rmeta').textContent=`${rs.length} lignes · ${q} ${y} · ${new Date().toLocaleDateString('fr-FR')}`;
+}
+function fm(n){return(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function dlCSV(){const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;const h=['Fournisseur','N° Client','Client','Agent','Date','N° Pièce','Montant HT','Taux (%)','Commission HT'];const l=[h.join(';'),...rows.map(r=>[r.fournisseur,r.n_client,r.client,r.agent,r.date,r.n_piece,String(r.montant_ht).replace('.',','),r.taux,String(r.commission_ht).replace('.',',')].join(';'))];const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+l.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Commissions_${q}${y}_VINOM.csv`;a.click();}
+
+function dlXLSX(){const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;const wb=XLSX.utils.book_new();const h=['Fournisseur','N° Client','Client','Agent','Date','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)'];const d=rows.map(r=>[r.fournisseur,r.n_client,r.client,r.agent,r.date,r.n_piece,r.montant_ht,r.taux,r.commission_ht]);const tH=rows.reduce((s,r)=>s+(r.montant_ht||0),0),tC=rows.reduce((s,r)=>s+(r.commission_ht||0),0);d.push(['','','','','',`TOTAL ${q} ${y}`,tH,'',tC]);const ws=XLSX.utils.aoa_to_sheet([h,...d]);ws['!cols']=[32,12,36,22,12,14,14,8,14].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,`Commissions ${q} ${y}`);XLSX.writeFile(wb,`Commissions_${q}${y}_VINOM.xlsx`);}
+</script>
+</body>
+</html>
