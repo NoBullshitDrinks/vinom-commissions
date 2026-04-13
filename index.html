@@ -16,54 +16,38 @@
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
 .app{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
 
-/* HEADER */
 .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid var(--cream2)}
 .logo{font-family:'DM Serif Display',serif;font-size:24px;color:var(--burg)}.logo span{color:var(--gold)}
 .subtitle{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
 .badge{background:var(--burg);color:var(--cream);font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:2px;letter-spacing:.8px}
 
-/* STEPS */
-.steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
-.step-card{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:16px;position:relative;transition:border-color .2s}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.step-card{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:18px;position:relative;transition:border-color .2s}
 .step-card.done{border-color:var(--ok);background:#F0FAF4}
-.step-num{font-family:'DM Serif Display',serif;font-size:32px;color:var(--cream2);position:absolute;top:10px;right:14px;line-height:1}
+.step-num{font-family:'DM Serif Display',serif;font-size:34px;color:var(--cream2);position:absolute;top:12px;right:14px;line-height:1}
 .step-card.done .step-num{color:rgba(46,125,79,.2)}
 .step-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px}
-.step-title{font-weight:600;font-size:13px;color:var(--ink);margin-bottom:8px}
-.step-desc{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.4}
+.step-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:6px}
+.step-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.4}
 
-/* DROP ZONES */
-.drop-zone{border:1.5px dashed var(--cream2);border-radius:4px;padding:10px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.drop-zone{border:1.5px dashed var(--cream2);border-radius:4px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
 .drop-zone.has-files{border-color:var(--ok);background:rgba(46,125,79,.05)}
-.drop-icon{font-size:18px}.drop-text{font-size:10px;color:var(--muted);line-height:1.3}.drop-hint{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+.drop-icon{font-size:20px}.drop-text{font-size:11px;color:var(--muted);line-height:1.3}.drop-hint{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
 input[type=file]{display:none}
-.file-list{margin-top:6px;display:flex;flex-direction:column;gap:3px}
-.file-item{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--cream2);border-radius:3px;padding:4px 7px;font-size:10px}
+.file-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.file-item{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--cream2);border-radius:3px;padding:5px 8px;font-size:11px}
 .fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Mono',monospace;color:var(--ink)}
 .fi-rm{cursor:pointer;color:var(--muted);transition:color .15s}.fi-rm:hover{color:var(--err)}
 
-/* MAPPING FOURNISSEURS */
-.mapping-wrap{margin-top:10px}
-.mapping-title{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px}
-.mapping-table{width:100%;border-collapse:collapse;font-size:11px}
-.mapping-table th{background:var(--burg);color:var(--cream);padding:5px 8px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px}
-.mapping-table td{padding:4px 8px;border-bottom:1px solid var(--cream2);vertical-align:middle}
-.mapping-table tr:last-child td{border-bottom:none}
-.mapping-table input{width:100%;border:1px solid var(--cream2);border-radius:3px;padding:3px 6px;font-size:10px;font-family:'DM Mono',monospace;background:var(--white)}
-.mapping-table input:focus{outline:none;border-color:var(--gold)}
-.btn-add-mapping{margin-top:6px;background:none;border:1px solid var(--cream2);border-radius:3px;padding:4px 10px;font-size:10px;cursor:pointer;color:var(--ink2);transition:border-color .15s}
-.btn-add-mapping:hover{border-color:var(--gold)}
-
-/* QUARTER */
-.quarter-row{display:flex;gap:8px;margin-top:10px;align-items:center}
-.quarter-row select,.quarter-row input{border:1.5px solid var(--cream2);border-radius:4px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
+.quarter-row{display:flex;gap:8px;margin-top:12px;align-items:center}
+.quarter-row label{font-size:11px;color:var(--muted)}
+.quarter-row select,.quarter-row input{border:1.5px solid var(--cream2);border-radius:4px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
 .quarter-row select:focus,.quarter-row input:focus{border-color:var(--gold)}
 .quarter-row select{width:72px}.quarter-row input{width:72px}
 
-/* GENERATE */
-.gen-wrap{margin:18px 0;display:flex;align-items:center;gap:14px}
-.btn-gen{background:var(--burg);color:var(--cream);border:none;border-radius:4px;padding:12px 28px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:8px}
+.gen-wrap{margin:20px 0;display:flex;align-items:center;gap:14px}
+.btn-gen{background:var(--burg);color:var(--cream);border:none;border-radius:4px;padding:13px 30px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:9px}
 .btn-gen:hover{background:var(--burg2)}.btn-gen:disabled{opacity:.4;cursor:not-allowed}
 .status{flex:1;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.5}
 .status.processing{color:var(--gold)}.status.ok{color:var(--ok)}.status.error{color:var(--err)}
@@ -71,7 +55,6 @@ input[type=file]{display:none}
 .prog-wrap.vis{display:block}
 .prog-bar{height:100%;background:linear-gradient(90deg,var(--burg),var(--gold));transition:width .4s;width:0%}
 
-/* RESULTS */
 .results{display:none;margin-top:6px}.results.vis{display:block}
 .results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .results-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--burg)}
@@ -81,24 +64,20 @@ input[type=file]{display:none}
 .btn-dl:hover{background:var(--gold2)}
 .btn-dl.sec{background:var(--white);border:1.5px solid var(--cream2);color:var(--ink2)}.btn-dl.sec:hover{border-color:var(--gold)}
 
-/* LEGEND */
-.legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.stats-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.stat-box{background:var(--white);border:1.5px solid var(--cream2);border-radius:4px;padding:8px 16px;text-align:center;min-width:80px}
+.stat-n{font-family:'DM Serif Display',serif;font-size:24px}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;color:var(--muted)}
+
+.legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .leg-item{display:flex;align-items:center;gap:6px;font-size:11px}
 .leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
 
-/* STATS */
-.stats-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-.stat-box{background:var(--white);border:1.5px solid var(--cream2);border-radius:4px;padding:8px 14px;text-align:center;min-width:80px}
-.stat-n{font-family:'DM Serif Display',serif;font-size:22px}
-.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;color:var(--muted)}
-
-/* TABLE */
 .tbl-wrap{overflow-x:auto;border:1.5px solid var(--cream2);border-radius:6px;max-height:600px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:11px;min-width:1000px}
 thead tr{background:var(--burg);color:var(--cream);position:sticky;top:0;z-index:10}
 thead th{padding:9px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-tbody tr{border-bottom:1px solid var(--cream2);transition:filter .1s}
-tbody tr:hover{filter:brightness(.97)}
+tbody tr{border-bottom:1px solid var(--cream2)}
 td{padding:7px 10px;vertical-align:middle}
 td.mono{font-family:'DM Mono',monospace;font-size:10px}
 td.num{text-align:right;font-family:'DM Mono',monospace}
@@ -109,10 +88,8 @@ td.ctr{text-align:center;font-family:'DM Mono',monospace}
 .pill-multi{background:var(--fill-multi);color:var(--multi)}
 .pill-err{background:var(--fill-err);color:var(--err)}
 .cand-row td{color:#999;font-size:10px}
-.cand-label{color:#aaa;font-style:italic}
 tfoot tr td{background:var(--cream2);font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
 
-/* SPINNER */
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
@@ -126,63 +103,40 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
     <div class="logo">VINOM <span>×</span> Rapprochement</div>
     <div class="subtitle">Commissions fournisseurs ↔ N° Opérations Vinistoria</div>
   </div>
-  <div class="badge">AAA · v1.0</div>
+  <div class="badge">AAA · v2.0</div>
 </div>
 
 <div class="steps">
-  <!-- STEP 1: PDFs -->
   <div class="step-card" id="card-pdfs">
     <div class="step-num">1</div>
     <div class="step-label">Étape 1</div>
     <div class="step-title">Relevés fournisseurs (PDF)</div>
-    <div class="step-desc">Relevés de commissions reçus des fournisseurs</div>
+    <div class="step-desc">Relevés de commissions reçus des fournisseurs — tous formats acceptés</div>
     <div class="drop-zone" id="drop-pdfs" onclick="document.getElementById('in-pdfs').click()">
       <div class="drop-icon">📄</div>
-      <div class="drop-text">Déposer les PDF ici</div>
+      <div class="drop-text">Déposer les PDF ici<br>ou cliquer pour sélectionner</div>
       <div class="drop-hint">Plusieurs fichiers acceptés</div>
     </div>
     <input type="file" id="in-pdfs" accept=".pdf" multiple>
     <div class="file-list" id="lst-pdfs"></div>
   </div>
 
-  <!-- STEP 2: Excel Vinistoria -->
   <div class="step-card" id="card-vino">
     <div class="step-num">2</div>
     <div class="step-label">Étape 2</div>
     <div class="step-title">Extraction Vinistoria (Excel)</div>
-    <div class="step-desc">Extraction commandes DD — couvrir la période des PDF</div>
+    <div class="step-desc">Extraction commandes DD avec libellé fournisseur — couvrir la période des PDF</div>
     <div class="drop-zone" id="drop-vino" onclick="document.getElementById('in-vino').click()">
       <div class="drop-icon">📊</div>
-      <div class="drop-text">Déposer l'Excel Vinistoria</div>
+      <div class="drop-text">Déposer l'Excel Vinistoria<br>ou cliquer pour sélectionner</div>
       <div class="drop-hint">Extraction_Commandes_DD_*.xlsx</div>
     </div>
     <input type="file" id="in-vino" accept=".xlsx,.xls">
     <div class="file-list" id="lst-vino"></div>
-  </div>
-
-  <!-- STEP 3: Config -->
-  <div class="step-card" id="card-cfg">
-    <div class="step-num">3</div>
-    <div class="step-label">Étape 3</div>
-    <div class="step-title">Configuration</div>
-    <div class="step-desc">Période et mapping fournisseurs PDF → codes Vinistoria</div>
     <div class="quarter-row">
+      <label>Période :</label>
       <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
       <input type="number" id="inp-y" value="2026" min="2020" max="2035">
-    </div>
-    <div class="mapping-wrap">
-      <div class="mapping-title">Mapping fournisseurs (hint PDF → code Vinistoria)</div>
-      <table class="mapping-table">
-        <thead><tr><th>Hint (nom PDF partiel)</th><th>Code Vinistoria</th></tr></thead>
-        <tbody id="mapping-tbody">
-          <tr><td><input value="leoube"></td><td><input value="119"></td></tr>
-          <tr><td><input value="aghione"></td><td><input value="242"></td></tr>
-          <tr><td><input value="vinibegood"></td><td><input value="148"></td></tr>
-          <tr><td><input value="vini be good"></td><td><input value="148"></td></tr>
-          <tr><td><input value="badet"></td><td><input value="536"></td></tr>
-        </tbody>
-      </table>
-      <button class="btn-add-mapping" onclick="addMappingRow()">+ Ajouter un fournisseur</button>
     </div>
   </div>
 </div>
@@ -207,25 +161,20 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
       <button class="btn-dl" onclick="dlXLSX()">⬇ Excel (.xlsx)</button>
     </div>
   </div>
-
   <div class="stats-row" id="stats-row"></div>
-
   <div class="legend">
-    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-ok);border:1px solid var(--ok)"></div><span>Match unique (0-10j)</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-ok);border:1px solid var(--ok)"></div><span>Match unique — date OK (0–10j)</span></div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--fill-warn);border:1px solid var(--warn)"></div><span>Match unique — écart date &gt;10j</span></div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--fill-multi);border:1px solid var(--multi)"></div><span>Plusieurs candidats</span></div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--fill-err);border:1px solid var(--err)"></div><span>Aucun match</span></div>
   </div>
-
   <div class="tbl-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>Fournisseur</th><th>Client (PDF)</th><th>Agent</th>
-          <th>Date facture</th><th>N° Pièce</th><th>Montant HT</th><th>Taux</th><th>Commission HT</th>
-          <th>N° Op. VINOM</th><th>Date commande</th><th>Montant VINOM</th><th>Écart (j)</th><th>Score</th><th>Statut</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Fournisseur (PDF)</th><th>Client (PDF)</th><th>Agent</th>
+        <th>Date facture</th><th>N° Pièce</th><th>Montant HT</th><th>Taux</th><th>Commission HT</th>
+        <th>N° Op. VINOM</th><th>Date commande</th><th>Montant VINOM</th><th>Écart (j)</th><th>Score</th><th>Statut</th>
+      </tr></thead>
       <tbody id="rtbody"></tbody>
       <tfoot id="rtfoot"></tfoot>
     </table>
@@ -233,433 +182,311 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
   <div id="warns-area"></div>
 </div>
 
-</div><!-- .app -->
-
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// ── STATE ────────────────────────────────────────────────────────────────────
 let pdfFiles=[], vinoFile=null, lastRows=[];
 
-// ── FILE HANDLING ─────────────────────────────────────────────────────────────
-function setupDZ(did, iid, onFiles) {
-  const z = document.getElementById(did);
-  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('dragover'); });
-  z.addEventListener('dragleave', () => z.classList.remove('dragover'));
-  z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('dragover'); onFiles([...e.dataTransfer.files]); });
-  document.getElementById(iid).addEventListener('change', e => onFiles([...e.target.files]));
+// ── DROP ZONES ────────────────────────────────────────────────────────────────
+function setupDZ(did,iid,onFiles){
+  const z=document.getElementById(did);
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover')});
+  z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');onFiles([...e.dataTransfer.files])});
+  document.getElementById(iid).addEventListener('change',e=>onFiles([...e.target.files]));
 }
-
-function renderList(cid, files, rmFn) {
-  const el = document.getElementById(cid); el.innerHTML = '';
-  files.forEach((f, i) => {
-    const d = document.createElement('div'); d.className = 'file-item';
-    d.innerHTML = `<span>${f.name.endsWith('.pdf')?'📄':'📊'}</span><span class="fi-name">${f.name}</span><span class="fi-rm" onclick="${rmFn}(${i})">✕</span>`;
-    el.appendChild(d);
-  });
+function renderList(cid,files,rmFn){
+  const el=document.getElementById(cid);el.innerHTML='';
+  files.forEach((f,i)=>{const d=document.createElement('div');d.className='file-item';d.innerHTML=`<span>${f.name.endsWith('.pdf')?'📄':'📊'}</span><span class="fi-name">${f.name}</span><span class="fi-rm" onclick="${rmFn}(${i})">✕</span>`;el.appendChild(d)});
 }
-
-function rmPdf(i) { pdfFiles.splice(i,1); renderList('lst-pdfs',pdfFiles,'rmPdf'); document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0); document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0); chk(); }
-function rmVino() { vinoFile=null; renderList('lst-vino',[],()=>{}); document.getElementById('drop-vino').classList.remove('has-files'); document.getElementById('card-vino').classList.remove('done'); chk(); }
-
-setupDZ('drop-pdfs','in-pdfs', files => {
-  pdfFiles = [...pdfFiles, ...files.filter(f=>f.name.endsWith('.pdf'))];
-  renderList('lst-pdfs',pdfFiles,'rmPdf');
-  document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0);
-  document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0);
-  chk();
-});
-setupDZ('drop-vino','in-vino', files => {
-  vinoFile = files[0]||null;
-  if (vinoFile) { renderList('lst-vino',[vinoFile],'rmVino'); document.getElementById('drop-vino').classList.add('has-files'); document.getElementById('card-vino').classList.add('done'); }
-  chk();
-});
-
-function chk() {
-  const ok = pdfFiles.length > 0 && vinoFile;
-  document.getElementById('btn-gen').disabled = !ok;
-  if (ok) ss('Prêt — cliquez sur "Lancer le rapprochement".','');
-  else ss('Chargez les fichiers pour commencer.','');
-}
-function ss(m,c) { const e=document.getElementById('status'); e.textContent=m; e.className='status '+(c||''); }
-function sp(p) { document.getElementById('pw').classList.toggle('vis',p>0&&p<100); document.getElementById('pb').style.width=p+'%'; }
-
-// ── MAPPING FOURNISSEURS ──────────────────────────────────────────────────────
-function addMappingRow() {
-  const tb = document.getElementById('mapping-tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = '<td><input placeholder="ex: chapoutier"></td><td><input placeholder="ex: 99"></td>';
-  tb.appendChild(tr);
-}
-function getMapping() {
-  const rows = document.querySelectorAll('#mapping-tbody tr');
-  const m = {};
-  rows.forEach(r => {
-    const inputs = r.querySelectorAll('input');
-    const hint = inputs[0].value.trim().toLowerCase();
-    const code = parseInt(inputs[1].value.trim());
-    if (hint && !isNaN(code)) m[hint] = code;
-  });
-  return m;
-}
-function getFournCode(fournisseur, mapping) {
-  const f = fournisseur.toLowerCase();
-  for (const [hint, code] of Object.entries(mapping)) {
-    if (hint.includes(f) || f.includes(hint)) return code;
-  }
-  return null;
-}
+function rmPdf(i){pdfFiles.splice(i,1);renderList('lst-pdfs',pdfFiles,'rmPdf');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0);chk();}
+function rmVino(){vinoFile=null;renderList('lst-vino',[],()=>{});document.getElementById('drop-vino').classList.remove('has-files');document.getElementById('card-vino').classList.remove('done');chk();}
+setupDZ('drop-pdfs','in-pdfs',files=>{pdfFiles=[...pdfFiles,...files.filter(f=>f.name.endsWith('.pdf'))];renderList('lst-pdfs',pdfFiles,'rmPdf');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0);chk();});
+setupDZ('drop-vino','in-vino',files=>{vinoFile=files[0]||null;if(vinoFile){renderList('lst-vino',[vinoFile],'rmVino');document.getElementById('drop-vino').classList.add('has-files');document.getElementById('card-vino').classList.add('done');}chk();});
+function chk(){const ok=pdfFiles.length>0&&vinoFile;document.getElementById('btn-gen').disabled=!ok;ss(ok?'Prêt — cliquez sur "Lancer le rapprochement".':'Chargez les fichiers pour commencer.','');}
+function ss(m,c){const e=document.getElementById('status');e.textContent=m;e.className='status '+(c||'');}
+function sp(p){document.getElementById('pw').classList.toggle('vis',p>0&&p<100);document.getElementById('pb').style.width=p+'%';}
 
 // ── LECTURE EXCEL VINISTORIA ──────────────────────────────────────────────────
-async function readVinistoria() {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(ws, {header:1});
-        const headers = data[0];
-        // Trouver les index des colonnes clés
-        const idx = {};
-        const colNames = {
-          'nop': ['N° Opération','N° Opration'],
-          'fourn': ['Fourn/Dom'],
-          'nom1': ['Nom 1'],
-          'rais': ['Rais. Soc.'],
-          'montant': ['TOTAL HT (€)','TOTAL HT'],
-          'date': ['Date Création','Date Creation'],
-        };
-        Object.entries(colNames).forEach(([key, names]) => {
-          for (const name of names) {
-            const i = headers.findIndex(h => String(h||'').trim() === name);
-            if (i >= 0) { idx[key] = i; break; }
-          }
-        });
-        // Lire les lignes
-        const rows = [];
-        for (let i = 1; i < data.length; i++) {
-          const r = data[i];
-          const nop = r[idx.nop];
-          const fourn = parseFloat(r[idx.fourn]);
-          const nom1 = String(r[idx.nom1]||'').toUpperCase().trim();
-          const rais = String(r[idx.rais]||'').toUpperCase().trim();
-          let montant = r[idx.montant];
-          if (typeof montant === 'string') montant = parseFloat(montant.replace(/\s/g,'').replace(',','.'));
-          else montant = parseFloat(montant);
-          let date = r[idx.date];
-          if (date instanceof Date) { /* ok */ }
-          else if (typeof date === 'string') date = new Date(date);
-          else date = null;
-          if (!date || isNaN(date.getTime()) || date.getFullYear() < 2020) date = null;
-          if (nop && !isNaN(fourn)) {
-            rows.push({nop: parseInt(nop), fourn, nom1, rais, montant: isNaN(montant)?null:montant, date});
+async function readVinistoria(){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const data=XLSX.utils.sheet_to_json(ws,{header:1});
+        const headers=data[0].map(h=>String(h||'').trim());
+
+        // Chercher colonnes par nom — compatible avec les deux formats de fichier
+        function findCol(names){for(const n of names){const i=headers.indexOf(n);if(i>=0)return i;}return -1;}
+        const iNop   = findCol(['N° Opération','N° Opration']);
+        const iFourn = findCol(['(Fourn/Dom)','Fourn/Dom']);  // libellé en priorité
+        const iFourn2= findCol(['Fourn/Dom']);                // code en fallback
+        const iNom1  = findCol(['Nom 1']);
+        const iRais  = findCol(['Rais. Soc.']);
+        const iMt    = findCol(['TOTAL HT (€)','TOTAL HT']);
+        const iDate  = findCol(['Date Création','Date Creation']);
+
+        // Déterminer si la colonne fournisseur est libellé ou code
+        // Si le premier fichier: col "(Fourn/Dom)" = libellé, "Fourn/Dom" = code
+        // Si le nouveau fichier: "Fourn/Dom" = code uniquement
+        // On préfère le libellé si disponible
+        const hasFournLibelle = headers.includes('(Fourn/Dom)');
+        const iFournUse = hasFournLibelle ? findCol(['(Fourn/Dom)']) : findCol(['Fourn/Dom']);
+
+        const rows=[];
+        for(let i=1;i<data.length;i++){
+          const r=data[i];
+          const nop=r[iNop];
+          const fournRaw=String(r[iFournUse]||'');
+          const nom1=String(r[iNom1]||'').toUpperCase().trim();
+          const rais=String(r[iRais]||'').toUpperCase().trim();
+          let mt=r[iMt];
+          if(typeof mt==='string') mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));
+          else mt=parseFloat(mt);
+          let date=r[iDate];
+          if(date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
+          else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
+          else date=null;
+          if(nop&&fournRaw){
+            rows.push({nop:parseInt(nop),fourn:fournRaw,fournNorm:normalize(fournRaw),nom1,rais,montant:isNaN(mt)?null:mt,date});
           }
         }
         res(rows);
-      } catch(err) { rej(err); }
+      }catch(err){rej(err);}
     };
     reader.readAsArrayBuffer(vinoFile);
   });
 }
 
-// ── LECTURE PDF VIA API ───────────────────────────────────────────────────────
-async function readBase64(file) {
-  return new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
-}
+// ── API PDF ───────────────────────────────────────────────────────────────────
+async function readBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
 
-async function extractPdf(b64, filename) {
-  const prompt = `Fichier: ${filename}. Extrais TOUTES les lignes de commissions.
+async function extractPdf(b64,filename){
+  const prompt=`Fichier: ${filename}. Extrais TOUTES les lignes de commissions.
 Retourne UNIQUEMENT un JSON valide (aucun texte autour, aucun markdown):
-[{"fournisseur":"nom fournisseur émetteur","client":"nom client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"agent":"nom agent si présent sinon vide"}]
-Règles: inclure lignes négatives (avoirs). Exclure lignes montant_ht=0 ET commission_ht=0. taux=nombre entier (10 pour 10%). UNIQUEMENT le JSON.`;
-  const r = await fetch('/.netlify/functions/proxy', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      model:'claude-sonnet-4-20250514', max_tokens:1000,
-      messages:[{role:'user',content:[
-        {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
-        {type:'text',text:prompt}
-      ]}]
-    })
-  });
-  if (!r.ok) throw new Error(`API ${r.status}`);
-  const d = await r.json();
-  const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+[{"fournisseur":"nom complet du fournisseur émetteur","client":"nom du client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"agent":"nom agent si présent sinon vide"}]
+Règles: inclure lignes négatives (avoirs). Exclure lignes montant_ht=0 ET commission_ht=0. taux=nombre entier. UNIQUEMENT le JSON.`;
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
+  if(!r.ok)throw new Error(`API ${r.status}`);
+  const d=await r.json();
+  const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
   return JSON.parse(t.replace(/```json|```/g,'').trim());
 }
 
 // ── NORMALISATION ─────────────────────────────────────────────────────────────
-function normalize(s) {
-  return s.toUpperCase()
-    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|GFA|SASU|SNCP|SCOP|CIE|ETS)\b/g,'')
+function normalize(s){
+  return String(s).toUpperCase()
+    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,'')
     .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 }
-function strSim(a, b) {
-  a = normalize(a); b = normalize(b);
-  if (!a || !b) return 0;
-  // Longest common subsequence ratio (simple SequenceMatcher approx)
-  const la=a.length, lb=b.length;
-  let common=0;
-  const used = new Array(lb).fill(false);
-  for (let i=0; i<la; i++) {
-    for (let j=0; j<lb; j++) {
-      if (!used[j] && a[i]===b[j]) { common++; used[j]=true; break; }
-    }
-  }
-  return (2*common)/(la+lb);
+function strSim(a,b){
+  a=normalize(a);b=normalize(b);
+  if(!a||!b)return 0;
+  const la=a.length,lb=b.length;
+  let common=0;const used=new Array(lb).fill(false);
+  for(let i=0;i<la;i++)for(let j=0;j<lb;j++)if(!used[j]&&a[i]===b[j]){common++;used[j]=true;break;}
+  return(2*common)/(la+lb);
 }
-function clientSim(clientPdf, nom1, rais) {
-  const a = normalize(clientPdf);
-  const s1 = strSim(clientPdf, nom1);
-  const s2 = strSim(clientPdf, rais);
-  const n1 = normalize(nom1), n2 = normalize(rais);
-  const c3 = (a.length>=4 && (n1.includes(a)||a.includes(n1)||n2.includes(a)||a.includes(n2))) ? 0.85 : 0;
-  return Math.max(s1, s2, c3);
+function clientSim(pdf,nom1,rais){
+  const a=normalize(pdf),n1=normalize(nom1),n2=normalize(rais);
+  const s1=strSim(pdf,nom1),s2=strSim(pdf,rais);
+  const c3=(a.length>=4&&(n1.includes(a)||a.includes(n1)||n2.includes(a)||a.includes(n2)))?0.85:0;
+  return Math.max(s1,s2,c3);
+}
+
+// ── MATCHING FOURNISSEUR PAR SIMILARITÉ DE NOM ────────────────────────────────
+// Construit un cache: nom_pdf_normalisé -> nom_vino le plus proche
+const fournCache={};
+function getFournVino(fournPdf, vinoRows){
+  const key=normalize(fournPdf);
+  if(fournCache[key])return fournCache[key];
+  // Trouver le libellé Vinistoria le plus similaire
+  const uniqueFourns=[...new Set(vinoRows.map(r=>r.fourn).filter(Boolean))];
+  let best=null,bestScore=0;
+  for(const f of uniqueFourns){
+    const s=strSim(fournPdf,f);
+    if(s>bestScore){bestScore=s;best=f;}
+  }
+  // Seuil minimum 0.30 pour éviter les faux positifs fournisseur
+  const result=bestScore>=0.30?best:null;
+  fournCache[key]=result;
+  return result;
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
-function match(comm, vinoRows, mapping) {
-  const {fournisseur, client, date: dateStr, montant_ht} = comm;
-  const isAvoir = montant_ht < 0;
-  const amt = Math.abs(parseFloat(montant_ht));
-  const fourn_code = getFournCode(fournisseur, mapping);
+function matchComm(comm, vinoRows){
+  const {fournisseur,client,date:dateStr,montant_ht}=comm;
+  const isAvoir=montant_ht<0;
+  const amt=Math.abs(parseFloat(montant_ht));
 
-  let datePdf = null;
-  if (dateStr) {
-    const [d,m,y] = dateStr.split('/');
-    datePdf = new Date(+y,+m-1,+d);
-    if (isNaN(datePdf.getTime())) datePdf = null;
-  }
+  let datePdf=null;
+  if(dateStr){const[d,m,y]=dateStr.split('/');datePdf=new Date(+y,+m-1,+d);if(isNaN(datePdf.getTime()))datePdf=null;}
 
-  // FILTRE 1 — fournisseur par code
-  let pool = fourn_code ? vinoRows.filter(r=>r.fourn===fourn_code) : vinoRows;
-  if (pool.length===0) return {candidates:[], status:'FOURNISSEUR INCONNU'};
+  // FILTRE 1 — fournisseur par similarité de nom
+  const fournVino=getFournVino(fournisseur,vinoRows);
+  if(!fournVino)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  let pool=vinoRows.filter(r=>r.fourn===fournVino);
+  if(pool.length===0)return{candidates:[],status:'FOURNISSEUR INCONNU'};
 
   // FILTRE 2 — client similarité ≥ 0.55
-  pool = pool.map(r => ({...r, score: clientSim(client, r.nom1, r.rais)}))
-             .filter(r => r.score >= 0.55);
-  if (pool.length===0) return {candidates:[], status:'CLIENT NON TROUVÉ'};
+  pool=pool.map(r=>({...r,score:clientSim(client,r.nom1,r.rais)})).filter(r=>r.score>=0.55);
+  if(pool.length===0)return{candidates:[],status:'CLIENT NON TROUVÉ'};
 
-  // FILTRE 3 — montant ±6% (avoirs: valeur absolue)
-  pool = pool.filter(r => {
-    if (r.montant===null) return false;
-    const rv = isAvoir ? Math.abs(r.montant) : r.montant;
-    if (rv <= 0 && !isAvoir) return false;
-    return Math.abs(rv - amt)/amt < 0.06;
+  // FILTRE 3 — montant ±6%
+  pool=pool.filter(r=>{
+    if(r.montant===null)return false;
+    const rv=isAvoir?Math.abs(r.montant):r.montant;
+    if(rv<=0&&!isAvoir)return false;
+    return Math.abs(rv-amt)/amt<0.06;
   });
-  if (pool.length===0) return {candidates:[], status:'MONTANT NON TROUVÉ'};
+  if(pool.length===0)return{candidates:[],status:'MONTANT NON TROUVÉ'};
 
-  // FILTRE 4 — date
-  let dateWarning = false;
-  if (datePdf) {
-    pool = pool.map(r => {
-      const gap = r.date ? Math.round((datePdf - r.date)/(1000*60*60*24)) : -9999;
-      return {...r, gap};
-    });
-    const normal = pool.filter(r => r.gap >= 0 && r.gap <= 10);
-    if (normal.length > 0) pool = normal;
-    else {
-      const ext = pool.filter(r => r.gap >= -5 && r.gap <= 90);
-      pool = ext.length > 0 ? ext : pool;
-      dateWarning = true;
-    }
-  } else {
-    pool = pool.map(r => ({...r, gap: null}));
-  }
+  // FILTRE 4 — date: commande VINOM avant facture fournisseur
+  let dateWarning=false;
+  if(datePdf){
+    pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/(86400000)):null}));
+    const normal=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=10);
+    if(normal.length>0){pool=normal;}
+    else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=90);pool=ext.length>0?ext:pool;dateWarning=true;}
+  }else{pool=pool.map(r=>({...r,gap:null}));}
 
-  pool = pool.sort((a,b) => Math.abs(a.gap??9999) - Math.abs(b.gap??9999));
-  const candidates = pool.slice(0,4);
-  const n = candidates.length;
-
+  pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
+  const candidates=pool.slice(0,4);
+  const n=candidates.length;
   let status;
-  if (n===1 && !dateWarning) status = '✓ MATCH UNIQUE';
-  else if (n===1 && dateWarning) status = '⚠ MATCH UNIQUE — ÉCART DATE';
-  else if (dateWarning) status = `⚠ MULTI-CANDIDATS (${n}) — ÉCART DATE`;
-  else status = `MULTI-CANDIDATS (${n})`;
-  if (isAvoir && status.includes('✓')) status = status.replace('✓','✓ (avoir)');
-
-  return {candidates, status};
+  if(n===1&&!dateWarning)status='✓ MATCH UNIQUE';
+  else if(n===1&&dateWarning)status='⚠ MATCH UNIQUE — ÉCART DATE';
+  else if(dateWarning)status=`⚠ MULTI-CANDIDATS (${n}) — ÉCART DATE`;
+  else status=`MULTI-CANDIDATS (${n})`;
+  if(isAvoir&&status.includes('✓'))status=status.replace('✓','✓ (avoir)');
+  return{candidates,status};
 }
 
 // ── RUN ───────────────────────────────────────────────────────────────────────
-async function run() {
-  const btn = document.getElementById('btn-gen');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Traitement…';
+async function run(){
+  const btn=document.getElementById('btn-gen');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Traitement…';
   document.getElementById('results').classList.remove('vis');
-  document.getElementById('warns-area').innerHTML = '';
+  document.getElementById('warns-area').innerHTML='';
   sp(5);
-  const q=document.getElementById('sel-q').value, y=document.getElementById('inp-y').value;
-  const mapping = getMapping();
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  // Reset cache fournisseurs à chaque run
+  Object.keys(fournCache).forEach(k=>delete fournCache[k]);
 
-  try {
-    ss('Lecture Vinistoria…','processing'); sp(10);
-    const vinoRows = await readVinistoria();
-    ss(`Vinistoria: ${vinoRows.length} lignes chargées`,'processing'); sp(15);
+  try{
+    ss('Lecture Vinistoria…','processing');sp(10);
+    const vinoRows=await readVinistoria();
+    ss(`Vinistoria: ${vinoRows.length} lignes chargées`,'processing');sp(15);
 
-    // Extraire commissions des PDFs
-    const allComms = [];
-    const warns = [];
-    for (let i=0; i<pdfFiles.length; i++) {
-      const f = pdfFiles[i];
+    const allComms=[],warns=[];
+    for(let i=0;i<pdfFiles.length;i++){
+      const f=pdfFiles[i];
       ss(`Extraction PDF ${i+1}/${pdfFiles.length}: ${f.name}`,'processing');
-      sp(15 + Math.round((i/pdfFiles.length)*55));
-      try {
-        const b64 = await readBase64(f);
-        const comms = await extractPdf(b64, f.name);
-        comms.forEach(c => allComms.push({...c, _src: f.name}));
-      } catch(e) { warns.push(`${f.name}: erreur extraction — ${e.message}`); }
+      sp(15+Math.round((i/pdfFiles.length)*55));
+      try{const b64=await readBase64(f);const comms=await extractPdf(b64,f.name);comms.forEach(c=>allComms.push({...c,_src:f.name}));}
+      catch(e){warns.push(`${f.name}: erreur — ${e.message}`);}
     }
 
-    sp(75); ss('Rapprochement en cours…','processing');
-
-    // Rapprochement
-    const resultRows = [];
-    const stats = {'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
-
-    allComms.forEach(comm => {
-      const {candidates, status} = match(comm, vinoRows, mapping);
-      if (status.includes('✓')) stats['✓']++;
-      else if (status.includes('⚠')) stats['⚠']++;
-      else if (status.includes('MULTI')) stats['MULTI']++;
+    sp(75);ss('Rapprochement en cours…','processing');
+    const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
+    allComms.forEach(comm=>{
+      const{candidates,status}=matchComm(comm,vinoRows);
+      if(status.includes('✓'))stats['✓']++;
+      else if(status.includes('⚠'))stats['⚠']++;
+      else if(status.includes('MULTI'))stats['MULTI']++;
       else stats['AUCUN']++;
-      resultRows.push({comm, candidates, status});
+      resultRows.push({comm,candidates,status});
     });
 
-    sp(90); lastRows = resultRows;
-    renderTable(resultRows, q, y);
-    renderStats(stats, resultRows.length);
+    sp(90);lastRows=resultRows;
+    renderTable(resultRows,q,y);
+    renderStats(stats);
 
-    if (warns.length) {
-      const box = document.createElement('div');
-      box.style.cssText = 'margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';
-      box.innerHTML = `<strong>⚠ Avertissements</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;
-      document.getElementById('warns-area').appendChild(box);
-    }
+    if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Avertissements</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('warns-area').appendChild(box);}
 
-    sp(100); setTimeout(()=>sp(0),600);
+    sp(100);setTimeout(()=>sp(0),600);
     ss(`✓ ${allComms.length} lignes traitées — ${q} ${y}`,'ok');
     document.getElementById('results').classList.add('vis');
-    document.getElementById('rmeta').textContent = `${allComms.length} lignes · ${q} ${y} · ${new Date().toLocaleDateString('fr-FR')}`;
-
-  } catch(e) { ss('Erreur: '+e.message,'error'); sp(0); }
-  btn.disabled=false; btn.innerHTML='<span>⚡</span> Lancer le rapprochement';
+    document.getElementById('rmeta').textContent=`${allComms.length} lignes · ${q} ${y} · ${new Date().toLocaleDateString('fr-FR')}`;
+  }catch(e){ss('Erreur: '+e.message,'error');sp(0);}
+  btn.disabled=false;btn.innerHTML='<span>⚡</span> Lancer le rapprochement';
 }
 
-// ── RENDER TABLE ──────────────────────────────────────────────────────────────
-function fmt(n) { return n!=null ? Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; }
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function fmt(n){return n!=null?Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 
-function renderTable(rows, q, y) {
-  const tbody = document.getElementById('rtbody'), tfoot = document.getElementById('rtfoot');
-  tbody.innerHTML=''; tfoot.innerHTML='';
-  let tHT=0, tCom=0;
-
-  rows.forEach(({comm, candidates, status}) => {
-    const isAvoir = comm.montant_ht < 0;
-    let bgColor, pillClass;
-    if (status.includes('AUCUN')||status.includes('NON TROUVÉ')||status.includes('INCONNU')) { bgColor='var(--fill-err)'; pillClass='pill-err'; }
-    else if (status.includes('⚠')) { bgColor='var(--fill-warn)'; pillClass='pill-warn'; }
-    else if (status.includes('MULTI')) { bgColor='var(--fill-multi)'; pillClass='pill-multi'; }
-    else { bgColor='var(--fill-ok)'; pillClass='pill-ok'; }
-
-    const mainCand = candidates[0] || {};
-    const tr = document.createElement('tr');
-    tr.style.background = bgColor;
-    tr.innerHTML = `
-      <td class="mono" style="font-size:10px">${comm.fournisseur||'—'}</td>
+function renderTable(rows,q,y){
+  const tbody=document.getElementById('rtbody'),tfoot=document.getElementById('rtfoot');
+  tbody.innerHTML='';tfoot.innerHTML='';
+  let tHT=0,tCom=0;
+  rows.forEach(({comm,candidates,status})=>{
+    const isAvoir=comm.montant_ht<0;
+    let bg,pc;
+    if(status.includes('AUCUN')||status.includes('NON TROUVÉ')||status.includes('INCONNU')){bg='var(--fill-err)';pc='pill-err';}
+    else if(status.includes('⚠')){bg='var(--fill-warn)';pc='pill-warn';}
+    else if(status.includes('MULTI')){bg='var(--fill-multi)';pc='pill-multi';}
+    else{bg='var(--fill-ok)';pc='pill-ok';}
+    const c=candidates[0]||{};
+    const tr=document.createElement('tr');tr.style.background=bg;
+    tr.innerHTML=`
+      <td class="mono">${comm.fournisseur||'—'}</td>
       <td>${comm.client||'—'}</td>
-      <td class="mono" style="font-size:10px">${comm.agent||'—'}</td>
+      <td class="mono">${comm.agent||'—'}</td>
       <td class="ctr">${comm.date||'—'}</td>
       <td class="mono">${comm.n_piece||'—'}</td>
-      <td class="num ${isAvoir?'style="color:var(--err)"':''}">${fmt(comm.montant_ht)}</td>
+      <td class="num" style="${isAvoir?'color:var(--err)':''}">${fmt(comm.montant_ht)}</td>
       <td class="ctr">${comm.taux}%</td>
       <td class="num">${fmt(comm.commission_ht)}</td>
-      <td class="mono" style="font-weight:700">${mainCand.nop||'—'}</td>
-      <td class="ctr">${mainCand.date?mainCand.date.toLocaleDateString('fr-FR'):'—'}</td>
-      <td class="num">${fmt(mainCand.montant)}</td>
-      <td class="ctr">${mainCand.gap!=null?mainCand.gap+'j':'—'}</td>
-      <td class="ctr">${mainCand.score!=null?Math.round(mainCand.score*100)+'%':'—'}</td>
-      <td><span class="status-pill ${pillClass}">${status}</span></td>
-    `;
+      <td class="mono" style="font-weight:700">${c.nop||'—'}</td>
+      <td class="ctr">${c.date?c.date.toLocaleDateString('fr-FR'):'—'}</td>
+      <td class="num">${fmt(c.montant)}</td>
+      <td class="ctr">${c.gap!=null?c.gap+'j':'—'}</td>
+      <td class="ctr">${c.score!=null?Math.round(c.score*100)+'%':'—'}</td>
+      <td><span class="status-pill ${pc}">${status}</span></td>`;
     tbody.appendChild(tr);
-    tHT += (parseFloat(comm.montant_ht)||0);
-    tCom += (parseFloat(comm.commission_ht)||0);
-
-    // Lignes candidats supplémentaires
-    candidates.slice(1).forEach((c, ci) => {
-      const tr2 = document.createElement('tr');
-      tr2.className = 'cand-row';
-      tr2.style.background = 'var(--fill-cand)';
-      tr2.innerHTML = `<td colspan="8"></td>
-        <td class="mono cand-label">↳ candidat ${ci+2}: ${c.nop||'—'}</td>
-        <td class="ctr">${c.date?c.date.toLocaleDateString('fr-FR'):'—'}</td>
-        <td class="num">${fmt(c.montant)}</td>
-        <td class="ctr">${c.gap!=null?c.gap+'j':'—'}</td>
-        <td class="ctr">${c.score!=null?Math.round(c.score*100)+'%':'—'}</td>
-        <td></td>`;
+    tHT+=parseFloat(comm.montant_ht)||0;tCom+=parseFloat(comm.commission_ht)||0;
+    candidates.slice(1).forEach((cc,ci)=>{
+      const tr2=document.createElement('tr');tr2.className='cand-row';tr2.style.background='var(--fill-cand)';
+      tr2.innerHTML=`<td colspan="8"></td><td class="mono" style="color:#aaa;font-style:italic">↳ candidat ${ci+2}: ${cc.nop||'—'}</td><td class="ctr">${cc.date?cc.date.toLocaleDateString('fr-FR'):'—'}</td><td class="num">${fmt(cc.montant)}</td><td class="ctr">${cc.gap!=null?cc.gap+'j':'—'}</td><td class="ctr">${cc.score!=null?Math.round(cc.score*100)+'%':'—'}</td><td></td>`;
       tbody.appendChild(tr2);
     });
   });
-
-  const tfr = document.createElement('tr');
-  tfr.innerHTML = `<td colspan="5" style="text-align:right;padding-right:10px;font-weight:700">TOTAL ${q} ${y}</td>
-    <td class="num" style="font-weight:700">${fmt(tHT)} €</td><td></td>
-    <td class="num" style="font-weight:700;color:var(--ok)">${fmt(tCom)} €</td>
-    <td colspan="6"></td>`;
+  const tfr=document.createElement('tr');
+  tfr.innerHTML=`<td colspan="5" style="text-align:right;padding-right:10px;font-weight:700">TOTAL ${q} ${y}</td><td class="num">${fmt(tHT)} €</td><td></td><td class="num" style="color:var(--ok)">${fmt(tCom)} €</td><td colspan="6"></td>`;
   tfoot.appendChild(tfr);
 }
 
-function renderStats(stats, total) {
-  const el = document.getElementById('stats-row'); el.innerHTML='';
-  const items = [
-    {n:stats['✓'], l:'Match exact', c:'var(--ok)'},
-    {n:stats['⚠'], l:'Écart date', c:'var(--warn)'},
-    {n:stats['MULTI'], l:'Multi-candidats', c:'var(--multi)'},
-    {n:stats['AUCUN'], l:'Aucun match', c:'var(--err)'},
-  ];
-  items.forEach(({n,l,c}) => {
-    const div = document.createElement('div'); div.className='stat-box';
-    div.innerHTML=`<div class="stat-n" style="color:${c}">${n}</div><div class="stat-l">${l}</div>`;
-    el.appendChild(div);
-  });
+function renderStats(stats){
+  const el=document.getElementById('stats-row');el.innerHTML='';
+  [{n:stats['✓'],l:'Match exact',c:'var(--ok)'},{n:stats['⚠'],l:'Écart date',c:'var(--warn)'},{n:stats['MULTI'],l:'Multi-candidats',c:'var(--multi)'},{n:stats['AUCUN'],l:'Aucun match',c:'var(--err)'}]
+  .forEach(({n,l,c})=>{const d=document.createElement('div');d.className='stat-box';d.innerHTML=`<div class="stat-n" style="color:${c}">${n}</div><div class="stat-l">${l}</div>`;el.appendChild(d);});
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-function dlCSV() {
+function dlCSV(){
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Score','Statut'];
   const lines=[h.join(';')];
-  lastRows.forEach(({comm,candidates,status}) => {
-    const c=candidates[0]||{};
-    lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,
-      String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),
-      c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',
-      String(c.montant||'').replace('.',','),c.gap!=null?c.gap:'',
-      c.score!=null?Math.round(c.score*100)+'%':'',status].join(';'));
-  });
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));
-  a.download=`Rapprochement_${q}${y}_VINOM.csv`; a.click();
+  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.montant||'').replace('.',','),c.gap!=null?c.gap:'',c.score!=null?Math.round(c.score*100)+'%':'',status].join(';'));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Rapprochement_${q}${y}_VINOM.csv`;a.click();
 }
-
-function dlXLSX() {
+function dlXLSX(){
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const wb=XLSX.utils.book_new();
   const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)','N° Op VINOM','Date commande VINOM','Montant VINOM (€)','Écart (j)','Score client','Statut'];
   const data=[];
-  lastRows.forEach(({comm,candidates,status}) => {
+  lastRows.forEach(({comm,candidates,status})=>{
     const c=candidates[0]||{};
-    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,
-      comm.montant_ht,comm.taux,comm.commission_ht,
-      c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.montant||'',
-      c.gap!=null?c.gap:'',c.score!=null?Math.round(c.score*100)+'%':'',status]);
-    candidates.slice(1).forEach((cc,ci) => {
-      data.push(['','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.montant||'',cc.gap!=null?cc.gap:'',cc.score!=null?Math.round(cc.score*100)+'%':'',`↳ candidat ${ci+2}`]);
-    });
+    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.montant||'',c.gap!=null?c.gap:'',c.score!=null?Math.round(c.score*100)+'%':'',status]);
+    candidates.slice(1).forEach((cc,ci)=>data.push(['','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.montant||'',cc.gap!=null?cc.gap:'',cc.score!=null?Math.round(cc.score*100)+'%':'',`↳ candidat ${ci+2}`]));
   });
   const tHT=lastRows.reduce((s,{comm})=>s+(parseFloat(comm.montant_ht)||0),0);
   const tCom=lastRows.reduce((s,{comm})=>s+(parseFloat(comm.commission_ht)||0),0);
   data.push(['','','','',`TOTAL ${q} ${y}`,tHT,'',tCom,'','','','','','']);
   const ws=XLSX.utils.aoa_to_sheet([h,...data]);
-  ws['!cols']=[20,22,14,12,14,12,7,14,16,16,14,8,8,28].map(w=>({wch:w}));
+  ws['!cols']=[22,22,14,12,14,12,7,14,16,16,14,8,8,28].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws,`Rapprochement ${q} ${y}`);
   XLSX.writeFile(wb,`Rapprochement_${q}${y}_VINOM.xlsx`);
 }
