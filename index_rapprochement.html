@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VINOM · Rapprochement Commissions</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --burg:#6B1A2A;--burg2:#8B2A3E;--gold:#C9973A;--gold2:#E8B95A;
+  --cream:#F7F2EA;--cream2:#EDE5D5;--ink:#1A1410;--ink2:#4A3F35;--muted:#8A7A6A;
+  --ok:#2E7D4F;--warn:#8B6914;--multi:#B05C00;--err:#C0392B;--white:#FDFAF5;
+  --fill-ok:#E2EFDA;--fill-warn:#FFF2CC;--fill-multi:#FCE4D6;--fill-err:#FFD7D7;--fill-cand:#FAF7F2;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid var(--cream2)}
+.logo{font-family:'DM Serif Display',serif;font-size:24px;color:var(--burg)}.logo span{color:var(--gold)}
+.subtitle{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+.badge{background:var(--burg);color:var(--cream);font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:2px;letter-spacing:.8px}
+
+/* SECTION PDF (toujours actif) */
+.section-required{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:18px;margin-bottom:14px}
+.section-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.section-desc{font-size:11px;color:var(--muted);margin-bottom:10px}
+.tag-required{background:var(--burg);color:var(--cream);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;letter-spacing:.5px}
+.tag-cached{background:var(--fill-ok);color:var(--ok);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;letter-spacing:.5px;border:1px solid var(--ok)}
+.tag-missing{background:var(--fill-err);color:var(--err);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;letter-spacing:.5px;border:1px solid var(--err)}
+
+/* SECTION FICHIERS FIXES */
+.section-fixed{border:1.5px solid var(--cream2);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.section-fixed-header{background:var(--cream);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-bottom:1.5px solid var(--cream2)}
+.section-fixed-header:hover{background:var(--cream2)}
+.section-fixed-title{font-weight:600;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.section-fixed-body{background:var(--white);padding:14px 18px;display:none}
+.section-fixed-body.open{display:block}
+.chevron{font-size:11px;color:var(--muted);transition:transform .2s}
+.chevron.open{transform:rotate(180deg)}
+
+/* Fichiers en cache: affichage compact */
+.cached-files{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.cached-file{display:flex;align-items:center;gap:8px;background:var(--fill-ok);border:1px solid rgba(46,125,79,.3);border-radius:4px;padding:6px 10px;font-size:11px}
+.cached-file .cf-icon{font-size:14px}
+.cached-file .cf-name{flex:1;font-family:'DM Mono',monospace;color:var(--ink);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cached-file .cf-date{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap}
+.cached-file .cf-update{cursor:pointer;background:none;border:1px solid rgba(46,125,79,.4);border-radius:3px;padding:2px 7px;font-size:9px;color:var(--ok);font-family:'DM Mono',monospace;transition:all .15s}
+.cached-file .cf-update:hover{background:var(--ok);color:var(--white)}
+
+.missing-file{display:flex;align-items:center;gap:8px;background:var(--fill-err);border:1px solid rgba(192,57,43,.3);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--err);margin-bottom:8px}
+
+/* DROP ZONES */
+.drop-zone{border:1.5px dashed var(--cream2);border-radius:4px;padding:10px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
+.drop-zone.has-files{border-color:var(--ok);background:rgba(46,125,79,.05)}
+.drop-icon{font-size:18px}.drop-text{font-size:11px;color:var(--muted);line-height:1.3}.drop-hint{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+input[type=file]{display:none}
+.file-list{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.file-item{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--cream2);border-radius:3px;padding:4px 7px;font-size:10px}
+.fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Mono',monospace;color:var(--ink)}
+.fi-rm{cursor:pointer;color:var(--muted);transition:color .15s}.fi-rm:hover{color:var(--err)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.col-block{display:flex;flex-direction:column;gap:6px}
+.col-label{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:2px}
+.col-desc{font-size:10px;color:var(--muted);margin-bottom:4px}
+
+.quarter-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.quarter-row label{font-size:11px;color:var(--muted)}
+.quarter-row select,.quarter-row input{border:1.5px solid var(--cream2);border-radius:4px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
+.quarter-row select:focus,.quarter-row input:focus{border-color:var(--gold)}
+.quarter-row select{width:72px}.quarter-row input{width:72px}
+
+.gen-wrap{margin:16px 0;display:flex;align-items:center;gap:14px}
+.btn-gen{background:var(--burg);color:var(--cream);border:none;border-radius:4px;padding:13px 30px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:9px}
+.btn-gen:hover{background:var(--burg2)}.btn-gen:disabled{opacity:.4;cursor:not-allowed}
+.status{flex:1;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.5}
+.status.processing{color:var(--gold)}.status.ok{color:var(--ok)}.status.error{color:var(--err)}
+.prog-wrap{height:2px;background:var(--cream2);margin-bottom:16px;overflow:hidden;display:none;border-radius:2px}
+.prog-wrap.vis{display:block}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--burg),var(--gold));transition:width .4s;width:0%}
+
+.results{display:none;margin-top:6px}.results.vis{display:block}
+.results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.results-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--burg)}
+.results-meta{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted)}
+.dl-btns{display:flex;gap:8px}
+.btn-dl{background:var(--gold);color:var(--ink);border:none;border-radius:3px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
+.btn-dl:hover{background:var(--gold2)}
+.btn-dl.sec{background:var(--white);border:1.5px solid var(--cream2);color:var(--ink2)}.btn-dl.sec:hover{border-color:var(--gold)}
+
+.stats-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.stat-box{background:var(--white);border:1.5px solid var(--cream2);border-radius:4px;padding:8px 16px;text-align:center;min-width:80px}
+.stat-n{font-family:'DM Serif Display',serif;font-size:24px}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;color:var(--muted)}
+
+.legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+
+.tbl-wrap{overflow-x:auto;border:1.5px solid var(--cream2);border-radius:6px;max-height:600px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:1000px}
+thead tr{background:var(--burg);color:var(--cream);position:sticky;top:0;z-index:10}
+thead th{padding:9px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--cream2)}
+td{padding:7px 10px;vertical-align:middle}
+td.mono{font-family:'DM Mono',monospace;font-size:10px}
+td.num{text-align:right;font-family:'DM Mono',monospace}
+td.ctr{text-align:center;font-family:'DM Mono',monospace}
+.status-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-family:'DM Mono',monospace;font-weight:600;white-space:nowrap}
+.pill-ok{background:var(--fill-ok);color:var(--ok)}
+.pill-warn{background:var(--fill-warn);color:var(--warn)}
+.pill-multi{background:var(--fill-multi);color:var(--multi)}
+.pill-err{background:var(--fill-err);color:var(--err)}
+.cand-row td{color:#999;font-size:10px}
+tfoot tr td{background:var(--cream2);font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div>
+    <div class="logo">VINOM <span>×</span> Rapprochement</div>
+    <div class="subtitle">Commissions fournisseurs ↔ N° Opérations Vinistoria</div>
+  </div>
+  <div class="badge">AAA · v4.0</div>
+</div>
+
+<!-- PDF FOURNISSEURS: toujours requis -->
+<div class="section-required">
+  <div class="section-title">
+    📄 Relevés fournisseurs (PDF)
+    <span class="tag-required">À charger à chaque trimestre</span>
+  </div>
+  <div class="section-desc">Relevés de commissions reçus des fournisseurs — tous formats acceptés</div>
+  <div class="drop-zone" id="drop-pdfs" onclick="document.getElementById('in-pdfs').click()">
+    <div class="drop-icon">📄</div>
+    <div class="drop-text">Déposer les PDF ici ou cliquer pour sélectionner</div>
+    <div class="drop-hint">Plusieurs fichiers acceptés</div>
+  </div>
+  <input type="file" id="in-pdfs" accept=".pdf" multiple>
+  <div class="file-list" id="lst-pdfs"></div>
+  <div class="quarter-row">
+    <label>Période :</label>
+    <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
+    <input type="number" id="inp-y" value="2026" min="2020" max="2035">
+  </div>
+</div>
+
+<!-- FICHIERS FIXES: repliables, avec cache -->
+<div class="section-fixed">
+  <div class="section-fixed-header" onclick="toggleFixed()">
+    <div class="section-fixed-title">
+      🗂️ Fichiers de référence
+      <span id="fixed-status-tag" class="tag-missing">Non chargés</span>
+    </div>
+    <span class="chevron" id="chevron">▼</span>
+  </div>
+  <div class="section-fixed-body" id="fixed-body">
+    <div id="cached-files-display"></div>
+    <div class="two-col" id="update-zone" style="display:none">
+      <div class="col-block">
+        <div class="col-label">Extraction Vinistoria</div>
+        <div class="col-desc">Extraction commandes DD — à mettre à jour si besoin</div>
+        <div class="drop-zone" id="drop-vino" onclick="document.getElementById('in-vino').click()">
+          <div class="drop-icon">📊</div>
+          <div class="drop-text">Déposer pour mettre à jour</div>
+          <div class="drop-hint">Extraction_Commandes_DD_*.xlsx</div>
+        </div>
+        <input type="file" id="in-vino" accept=".xlsx,.xls">
+        <div class="file-list" id="lst-vino"></div>
+      </div>
+      <div class="col-block">
+        <div class="col-label">Liste fournisseurs</div>
+        <div class="col-desc">Table de référence codes fournisseurs — à mettre à jour si besoin</div>
+        <div class="drop-zone" id="drop-fourn" onclick="document.getElementById('in-fourn').click()">
+          <div class="drop-icon">🗂️</div>
+          <div class="drop-text">Déposer pour mettre à jour</div>
+          <div class="drop-hint">Liste_des_fournisseurs_*.xlsx</div>
+        </div>
+        <input type="file" id="in-fourn" accept=".xlsx,.xls">
+        <div class="file-list" id="lst-fourn"></div>
+      </div>
+    </div>
+    <!-- Zone initiale si aucun cache -->
+    <div id="first-load-zone">
+      <div class="missing-file">⚠ Première utilisation — chargez les deux fichiers de référence ci-dessous</div>
+      <div class="two-col">
+        <div class="col-block">
+          <div class="col-label">Extraction Vinistoria</div>
+          <div class="col-desc">Extraction commandes DD — couvrir au moins 1 an</div>
+          <div class="drop-zone" id="drop-vino2" onclick="document.getElementById('in-vino2').click()">
+            <div class="drop-icon">📊</div>
+            <div class="drop-text">Déposer l'Excel Vinistoria</div>
+            <div class="drop-hint">Extraction_Commandes_DD_*.xlsx</div>
+          </div>
+          <input type="file" id="in-vino2" accept=".xlsx,.xls">
+          <div class="file-list" id="lst-vino2"></div>
+        </div>
+        <div class="col-block">
+          <div class="col-label">Liste fournisseurs</div>
+          <div class="col-desc">Table de référence codes fournisseurs (fichier fixe)</div>
+          <div class="drop-zone" id="drop-fourn2" onclick="document.getElementById('in-fourn2').click()">
+            <div class="drop-icon">🗂️</div>
+            <div class="drop-text">Déposer la liste fournisseurs</div>
+            <div class="drop-hint">Liste_des_fournisseurs_*.xlsx</div>
+          </div>
+          <input type="file" id="in-fourn2" accept=".xlsx,.xls">
+          <div class="file-list" id="lst-fourn2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gen-wrap">
+  <button class="btn-gen" id="btn-gen" onclick="run()" disabled>
+    <span>⚡</span> Lancer le rapprochement
+  </button>
+  <div class="status" id="status">Chargement…</div>
+</div>
+<div class="prog-wrap" id="pw"><div class="prog-bar" id="pb"></div></div>
+
+<div class="results" id="results">
+  <hr class="div">
+  <div class="results-hdr">
+    <div>
+      <div class="results-title">Résultats du rapprochement</div>
+      <div class="results-meta" id="rmeta"></div>
+    </div>
+    <div class="dl-btns">
+      <button class="btn-dl sec" onclick="dlCSV()">⬇ CSV</button>
+      <button class="btn-dl" onclick="dlXLSX()">⬇ Excel (.xlsx)</button>
+    </div>
+  </div>
+  <div class="stats-row" id="stats-row"></div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-ok);border:1px solid var(--ok)"></div><span>Match unique — date OK (0–10j)</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-warn);border:1px solid var(--warn)"></div><span>Match unique — écart date &gt;10j</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-multi);border:1px solid var(--multi)"></div><span>Plusieurs candidats</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-err);border:1px solid var(--err)"></div><span>Aucun match</span></div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Fournisseur (PDF)</th><th>Client (PDF)</th><th>Agent</th>
+        <th>Date facture</th><th>N° Pièce</th><th>Montant HT</th><th>Taux</th><th>Commission HT</th>
+        <th>N° Op. VINOM</th><th>Date commande</th><th>Montant VINOM</th><th>Écart (j)</th><th>Score</th><th>Statut</th>
+      </tr></thead>
+      <tbody id="rtbody"></tbody>
+      <tfoot id="rtfoot"></tfoot>
+    </table>
+  </div>
+  <div id="warns-area"></div>
+</div>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+let pdfFiles = [];
+let pendingVinoFile = null, pendingFournFile = null;
+let lastRows = [];
+
+// Données en mémoire (chargées depuis cache ou fichier)
+let vinoRows = null;   // array of row objects
+let fournMap = null;   // Map: code -> nom
+
+// Métadonnées cache
+let cacheMeta = {
+  vino: null,   // {name, date, size}
+  fourn: null,  // {name, date, size}
+};
+
+// ── STORAGE HELPERS ───────────────────────────────────────────────────────────
+const STORAGE_KEY_VINO  = 'vinom_vino_data';
+const STORAGE_KEY_FOURN = 'vinom_fourn_data';
+const STORAGE_KEY_META  = 'vinom_cache_meta';
+
+function saveToStorage(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); return true; }
+  catch(e) { console.warn('Storage full:', e); return false; }
+}
+function loadFromStorage(key) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+  catch(e) { return null; }
+}
+
+// ── INIT: charger depuis cache au démarrage ───────────────────────────────────
+async function init() {
+  const meta = loadFromStorage(STORAGE_KEY_META);
+  if (meta) cacheMeta = meta;
+
+  const cachedVino  = loadFromStorage(STORAGE_KEY_VINO);
+  const cachedFourn = loadFromStorage(STORAGE_KEY_FOURN);
+
+  if (cachedVino)  vinoRows = cachedVino;
+  if (cachedFourn) fournMap = new Map(cachedFourn);
+
+  renderFixedSection();
+  chk();
+}
+
+// ── UI FICHIERS FIXES ─────────────────────────────────────────────────────────
+function toggleFixed() {
+  const body = document.getElementById('fixed-body');
+  const chev = document.getElementById('chevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function renderFixedSection() {
+  const hasVino  = vinoRows !== null;
+  const hasFourn = fournMap !== null;
+  const allCached = hasVino && hasFourn;
+
+  // Tag statut
+  const tag = document.getElementById('fixed-status-tag');
+  if (allCached) {
+    tag.textContent = 'En cache ✓';
+    tag.className = 'tag-cached';
+  } else {
+    tag.textContent = 'Non chargés';
+    tag.className = 'tag-missing';
+    // Ouvrir automatiquement si pas de cache
+    document.getElementById('fixed-body').classList.add('open');
+    document.getElementById('chevron').classList.add('open');
+  }
+
+  // Zone affichage cache
+  const display = document.getElementById('cached-files-display');
+  display.innerHTML = '';
+
+  if (hasVino) {
+    const m = cacheMeta.vino;
+    display.innerHTML += `<div class="cached-files">
+      <div class="cached-file">
+        <span class="cf-icon">📊</span>
+        <span class="cf-name">${m?.name || 'Extraction Vinistoria'}</span>
+        <span class="cf-date">${m?.date || ''} · ${m?.rows || vinoRows.length} lignes</span>
+        <button class="cf-update" onclick="showUpdateZone('vino')">Mettre à jour</button>
+      </div>
+    </div>`;
+  }
+  if (hasFourn) {
+    const m = cacheMeta.fourn;
+    display.innerHTML += `<div class="cached-files">
+      <div class="cached-file">
+        <span class="cf-icon">🗂️</span>
+        <span class="cf-name">${m?.name || 'Liste fournisseurs'}</span>
+        <span class="cf-date">${m?.date || ''} · ${m?.count || fournMap.size} entrées</span>
+        <button class="cf-update" onclick="showUpdateZone('fourn')">Mettre à jour</button>
+      </div>
+    </div>`;
+  }
+
+  // Afficher zone initiale ou zone update
+  document.getElementById('first-load-zone').style.display = allCached ? 'none' : 'block';
+  document.getElementById('update-zone').style.display = 'none';
+}
+
+function showUpdateZone(which) {
+  const uz = document.getElementById('update-zone');
+  uz.style.display = 'grid';
+  document.getElementById('fixed-body').classList.add('open');
+  document.getElementById('chevron').classList.add('open');
+  // Focus sur la bonne drop zone
+  setTimeout(() => {
+    const el = which === 'vino'
+      ? document.getElementById('drop-vino')
+      : document.getElementById('drop-fourn');
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.style.borderColor = 'var(--gold)';
+    setTimeout(() => el.style.borderColor = '', 1500);
+  }, 100);
+}
+
+// ── DROP ZONES ────────────────────────────────────────────────────────────────
+function setupDZ(did, iid, onFiles) {
+  const z = document.getElementById(did);
+  if (!z) return;
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('dragover'); });
+  z.addEventListener('dragleave', () => z.classList.remove('dragover'));
+  z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('dragover'); onFiles([...e.dataTransfer.files]); });
+  document.getElementById(iid).addEventListener('change', e => onFiles([...e.target.files]));
+}
+
+function renderList(cid, files, rmFn) {
+  const el = document.getElementById(cid); if (!el) return; el.innerHTML = '';
+  files.forEach((f, i) => { const d = document.createElement('div'); d.className = 'file-item'; d.innerHTML = `<span>📄</span><span class="fi-name">${f.name}</span><span class="fi-rm" onclick="${rmFn}(${i})">✕</span>`; el.appendChild(d); });
+}
+
+function rmPdf(i) { pdfFiles.splice(i,1); renderList('lst-pdfs',pdfFiles,'rmPdf'); document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0); chk(); }
+
+// PDF fournisseurs
+setupDZ('drop-pdfs','in-pdfs', files => {
+  pdfFiles = [...pdfFiles, ...files.filter(f => f.name.endsWith('.pdf'))];
+  renderList('lst-pdfs', pdfFiles, 'rmPdf');
+  document.getElementById('drop-pdfs').classList.toggle('has-files', pdfFiles.length > 0);
+  chk();
+});
+
+// Vinistoria — première fois
+setupDZ('drop-vino2','in-vino2', async files => {
+  if (!files[0]) return;
+  renderList('lst-vino2', [files[0]], () => {});
+  document.getElementById('drop-vino2').classList.add('has-files');
+  ss('Chargement Vinistoria…','processing');
+  await loadVinoFile(files[0]);
+  renderFixedSection(); chk();
+});
+
+// Vinistoria — mise à jour
+setupDZ('drop-vino','in-vino', async files => {
+  if (!files[0]) return;
+  renderList('lst-vino', [files[0]], () => {});
+  document.getElementById('drop-vino').classList.add('has-files');
+  ss('Mise à jour Vinistoria…','processing');
+  await loadVinoFile(files[0]);
+  renderFixedSection(); chk();
+});
+
+// Fournisseurs — première fois
+setupDZ('drop-fourn2','in-fourn2', async files => {
+  if (!files[0]) return;
+  renderList('lst-fourn2', [files[0]], () => {});
+  document.getElementById('drop-fourn2').classList.add('has-files');
+  ss('Chargement liste fournisseurs…','processing');
+  await loadFournFile(files[0]);
+  renderFixedSection(); chk();
+});
+
+// Fournisseurs — mise à jour
+setupDZ('drop-fourn','in-fourn', async files => {
+  if (!files[0]) return;
+  renderList('lst-fourn', [files[0]], () => {});
+  document.getElementById('drop-fourn').classList.add('has-files');
+  ss('Mise à jour liste fournisseurs…','processing');
+  await loadFournFile(files[0]);
+  renderFixedSection(); chk();
+});
+
+// ── CHARGEMENT ET SAUVEGARDE DES FICHIERS FIXES ───────────────────────────────
+async function loadFournFile(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, {header:1});
+        const headers = data[0].map(h => String(h||'').trim());
+        const iCode = headers.indexOf('N° Fourn.');
+        const iNom  = headers.indexOf('Nom 1');
+        if (iCode < 0 || iNom < 0) throw new Error('Colonnes "N° Fourn." ou "Nom 1" introuvables');
+        const entries = [];
+        for (let i=1; i<data.length; i++) {
+          const code = parseInt(data[i][iCode]);
+          const nom  = String(data[i][iNom]||'').trim();
+          if (!isNaN(code) && nom) entries.push([code, nom]);
+        }
+        fournMap = new Map(entries);
+        cacheMeta.fourn = { name: file.name, date: new Date().toLocaleDateString('fr-FR'), count: entries.length };
+        saveToStorage(STORAGE_KEY_FOURN, entries);
+        saveToStorage(STORAGE_KEY_META, cacheMeta);
+        ss(`Fournisseurs chargés: ${entries.length} entrées`,'ok');
+        res();
+      } catch(err) { ss('Erreur fournisseurs: '+err.message,'error'); rej(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function loadVinoFile(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, {header:1});
+        const headers = data[0].map(h => String(h||'').trim());
+        function fc(names){for(const n of names){const i=headers.indexOf(n);if(i>=0)return i;}return -1;}
+        const iNop  = fc(['N° Opération','N° Opration']);
+        const iFourn= fc(['Fourn/Dom']);
+        const iNom1 = fc(['Nom 1']);
+        const iRais = fc(['Rais. Soc.']);
+        const iMt   = fc(['TOTAL HT (€)','TOTAL HT']);
+        const iDate = fc(['Date Création','Date Creation']);
+        const rows = [];
+        for (let i=1; i<data.length; i++) {
+          const r = data[i];
+          const nop = r[iNop];
+          const fournCode = parseInt(r[iFourn]);
+          if (!nop || isNaN(fournCode)) continue;
+          const nom1 = String(r[iNom1]||'').toUpperCase().trim();
+          const rais = String(r[iRais]||'').toUpperCase().trim();
+          let mt = r[iMt];
+          if (typeof mt==='string') mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));
+          else mt=parseFloat(mt);
+          let date = r[iDate];
+          if (date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
+          else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
+          else date=null;
+          // Sérialiser la date pour localStorage
+          rows.push({nop:parseInt(nop),fournCode,nom1,rais,montant:isNaN(mt)?null:mt,dateStr:date?date.toISOString():null});
+        }
+        vinoRows = rows.map(r => ({...r, date: r.dateStr ? new Date(r.dateStr) : null}));
+        cacheMeta.vino = { name: file.name, date: new Date().toLocaleDateString('fr-FR'), rows: rows.length };
+        saveToStorage(STORAGE_KEY_VINO, rows);
+        saveToStorage(STORAGE_KEY_META, cacheMeta);
+        ss(`Vinistoria chargé: ${rows.length} lignes`,'ok');
+        res();
+      } catch(err) { ss('Erreur Vinistoria: '+err.message,'error'); rej(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Restaurer les dates depuis le cache (elles sont stockées en string ISO)
+function restoreVinoRows(cached) {
+  return cached.map(r => ({...r, date: r.dateStr ? new Date(r.dateStr) : null}));
+}
+
+// ── ÉTAT BOUTON ───────────────────────────────────────────────────────────────
+function chk() {
+  const hasPdfs   = pdfFiles.length > 0;
+  const hasVino   = vinoRows !== null;
+  const hasFourn  = fournMap !== null;
+  const ok = hasPdfs && hasVino && hasFourn;
+  document.getElementById('btn-gen').disabled = !ok;
+  if (ok) ss('Prêt — cliquez sur "Lancer le rapprochement".','');
+  else {
+    const missing = [];
+    if (!hasPdfs)  missing.push('PDF fournisseurs');
+    if (!hasVino)  missing.push('extraction Vinistoria');
+    if (!hasFourn) missing.push('liste fournisseurs');
+    ss(`Manque : ${missing.join(', ')}.`,'');
+  }
+}
+function ss(m,c){const e=document.getElementById('status');e.textContent=m;e.className='status '+(c||'');}
+function sp(p){document.getElementById('pw').classList.toggle('vis',p>0&&p<100);document.getElementById('pb').style.width=p+'%';}
+
+// ── API PDF ───────────────────────────────────────────────────────────────────
+async function readBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
+
+async function extractPdf(b64,filename){
+  const prompt=`Fichier: ${filename}. Extrais TOUTES les lignes de commissions.
+Retourne UNIQUEMENT un JSON valide (aucun texte autour, aucun markdown):
+[{"fournisseur":"nom complet du fournisseur émetteur","client":"nom du client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"agent":"nom agent si présent sinon vide","statut_paiement":"PAYEE ou NON PAYEE"}]
+Règles strictes:
+- montant_ht et commission_ht sont TOUJOURS des nombres (float). Si la commission affiche "NON PAYEE" ou est absente, mettre commission_ht:0.
+- Inclure TOUTES les lignes, y compris celles non payées.
+- Inclure les lignes négatives (avoirs).
+- Exclure uniquement les lignes où montant_ht=0 ET commission_ht=0.
+- taux=nombre entier (15 pour 15%).
+- UNIQUEMENT le JSON, rien d'autre.`;
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
+  if(!r.ok)throw new Error(`API ${r.status}`);
+  const d=await r.json();
+  const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  return JSON.parse(t.replace(/```json|```/g,'').trim());
+}
+
+// ── NORMALISATION & SIMILARITÉ ────────────────────────────────────────────────
+function normalize(s){
+  return String(s).toUpperCase()
+    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,'')
+    .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+}
+function strSim(a,b){
+  a=normalize(a);b=normalize(b);if(!a||!b)return 0;
+  const la=a.length,lb=b.length;let common=0;const used=new Array(lb).fill(false);
+  for(let i=0;i<la;i++)for(let j=0;j<lb;j++)if(!used[j]&&a[i]===b[j]){common++;used[j]=true;break;}
+  return(2*common)/(la+lb);
+}
+function clientSim(pdf,nom1,rais){
+  const a=normalize(pdf),n1=normalize(nom1),n2=normalize(rais);
+  const s1=strSim(pdf,nom1),s2=strSim(pdf,rais);
+  const c3=(a.length>=4&&(n1.includes(a)||a.includes(n1)||n2.includes(a)||a.includes(n2)))?0.85:0;
+  return Math.max(s1,s2,c3);
+}
+
+// Cache nom PDF -> code fournisseur (reconstruit à chaque run)
+const fournCodeCache={};
+function getFournCode(fournPdf){
+  const key=normalize(fournPdf);
+  if(key in fournCodeCache)return fournCodeCache[key];
+  // Construire liste unique code->nom depuis fournMap
+  let bestCode=null,bestScore=0;
+  for(const [code,nom] of fournMap){
+    const s=strSim(fournPdf,nom);
+    if(s>bestScore){bestScore=s;bestCode=code;}
+  }
+  const result=bestScore>=0.30?bestCode:null;
+  fournCodeCache[key]=result;
+  return result;
+}
+
+// ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
+function matchComm(comm){
+  const{fournisseur,client,date:dateStr,montant_ht}=comm;
+  const isAvoir=montant_ht<0;
+  const amt=Math.abs(parseFloat(montant_ht));
+  let datePdf=null;
+  if(dateStr){const[d,m,y]=dateStr.split('/');datePdf=new Date(+y,+m-1,+d);if(isNaN(datePdf.getTime()))datePdf=null;}
+
+  const fournCode=getFournCode(fournisseur);
+  if(!fournCode)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  let pool=vinoRows.filter(r=>r.fournCode===fournCode);
+  if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+
+  pool=pool.map(r=>({...r,score:clientSim(client,r.nom1,r.rais)})).filter(r=>r.score>=0.55);
+  if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
+
+  pool=pool.filter(r=>{
+    if(r.montant===null)return false;
+    const rv=isAvoir?Math.abs(r.montant):r.montant;
+    if(rv<=0&&!isAvoir)return false;
+    return Math.abs(rv-amt)/amt<0.06;
+  });
+  if(!pool.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
+
+  let dateWarning=false;
+  if(datePdf){
+    pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/86400000):null}));
+    const normal=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=10);
+    if(normal.length>0){pool=normal;}
+    else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=90);pool=ext.length>0?ext:pool;dateWarning=true;}
+  }else{pool=pool.map(r=>({...r,gap:null}));}
+
+  pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
+  const candidates=pool.slice(0,4);
+  const n=candidates.length;
+  let status;
+  if(n===1&&!dateWarning)status='✓ MATCH UNIQUE';
+  else if(n===1&&dateWarning)status='⚠ MATCH UNIQUE — ÉCART DATE';
+  else if(dateWarning)status=`⚠ MULTI-CANDIDATS (${n}) — ÉCART DATE`;
+  else status=`MULTI-CANDIDATS (${n})`;
+  if(isAvoir&&status.includes('✓'))status=status.replace('✓','✓ (avoir)');
+  return{candidates,status};
+}
+
+// ── RUN ───────────────────────────────────────────────────────────────────────
+async function run(){
+  const btn=document.getElementById('btn-gen');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Traitement…';
+  document.getElementById('results').classList.remove('vis');
+  document.getElementById('warns-area').innerHTML='';
+  sp(5);
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  Object.keys(fournCodeCache).forEach(k=>delete fournCodeCache[k]);
+
+  try{
+    const allComms=[],warns=[];
+    for(let i=0;i<pdfFiles.length;i++){
+      const f=pdfFiles[i];
+      ss(`Extraction PDF ${i+1}/${pdfFiles.length}: ${f.name}`,'processing');
+      sp(10+Math.round((i/pdfFiles.length)*60));
+      try{const b64=await readBase64(f);const comms=await extractPdf(b64,f.name);comms.forEach(c=>allComms.push({...c,_src:f.name}));}
+      catch(e){warns.push(`${f.name}: erreur — ${e.message}`);}
+    }
+
+    sp(75);ss('Rapprochement en cours…','processing');
+    const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
+    allComms.forEach(comm=>{
+      const{candidates,status}=matchComm(comm);
+      if(status.includes('✓'))stats['✓']++;
+      else if(status.includes('⚠'))stats['⚠']++;
+      else if(status.includes('MULTI'))stats['MULTI']++;
+      else stats['AUCUN']++;
+      resultRows.push({comm,candidates,status});
+    });
+
+    sp(90);lastRows=resultRows;
+    renderTable(resultRows,q,y);
+    renderStats(stats);
+
+    if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Avertissements</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('warns-area').appendChild(box);}
+
+    sp(100);setTimeout(()=>sp(0),600);
+    ss(`✓ ${allComms.length} lignes traitées — ${q} ${y}`,'ok');
+    document.getElementById('results').classList.add('vis');
+    document.getElementById('rmeta').textContent=`${allComms.length} lignes · ${q} ${y} · ${new Date().toLocaleDateString('fr-FR')}`;
+  }catch(e){ss('Erreur: '+e.message,'error');sp(0);}
+  btn.disabled=false;btn.innerHTML='<span>⚡</span> Lancer le rapprochement';
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function fmt(n){return n!=null?Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+
+function renderTable(rows,q,y){
+  const tbody=document.getElementById('rtbody'),tfoot=document.getElementById('rtfoot');
+  tbody.innerHTML='';tfoot.innerHTML='';
+  let tHT=0,tCom=0;
+  rows.forEach(({comm,candidates,status})=>{
+    const isAvoir=comm.montant_ht<0;
+    let bg,pc;
+    if(status.includes('AUCUN')||status.includes('NON TROUVÉ')||status.includes('INCONNU')){bg='var(--fill-err)';pc='pill-err';}
+    else if(status.includes('⚠')){bg='var(--fill-warn)';pc='pill-warn';}
+    else if(status.includes('MULTI')){bg='var(--fill-multi)';pc='pill-multi';}
+    else{bg='var(--fill-ok)';pc='pill-ok';}
+    const c=candidates[0]||{};
+    const tr=document.createElement('tr');tr.style.background=bg;
+    tr.innerHTML=`<td class="mono">${comm.fournisseur||'—'}</td><td>${comm.client||'—'}</td><td class="mono">${comm.agent||'—'}</td><td class="ctr">${comm.date||'—'}</td><td class="mono">${comm.n_piece||'—'}</td><td class="num"${isAvoir?' style="color:var(--err)"':''}>${fmt(comm.montant_ht)}</td><td class="ctr">${comm.taux}%</td><td class="num">${fmt(comm.commission_ht)}</td><td class="mono" style="font-weight:700">${c.nop||'—'}</td><td class="ctr">${c.date?c.date.toLocaleDateString('fr-FR'):'—'}</td><td class="num">${fmt(c.montant)}</td><td class="ctr">${c.gap!=null?c.gap+'j':'—'}</td><td class="ctr">${c.score!=null?Math.round(c.score*100)+'%':'—'}</td><td><span class="status-pill ${pc}">${status}</span></td>`;
+    tbody.appendChild(tr);
+    tHT+=parseFloat(comm.montant_ht)||0;tCom+=parseFloat(comm.commission_ht)||0;
+    candidates.slice(1).forEach((cc,ci)=>{
+      const tr2=document.createElement('tr');tr2.className='cand-row';tr2.style.background='var(--fill-cand)';
+      tr2.innerHTML=`<td colspan="8"></td><td class="mono" style="color:#aaa;font-style:italic">↳ candidat ${ci+2}: ${cc.nop||'—'}</td><td class="ctr">${cc.date?cc.date.toLocaleDateString('fr-FR'):'—'}</td><td class="num">${fmt(cc.montant)}</td><td class="ctr">${cc.gap!=null?cc.gap+'j':'—'}</td><td class="ctr">${cc.score!=null?Math.round(cc.score*100)+'%':'—'}</td><td></td>`;
+      tbody.appendChild(tr2);
+    });
+  });
+  const tfr=document.createElement('tr');
+  tfr.innerHTML=`<td colspan="5" style="text-align:right;padding-right:10px;font-weight:700">TOTAL ${q} ${y}</td><td class="num">${fmt(tHT)} €</td><td></td><td class="num" style="color:var(--ok)">${fmt(tCom)} €</td><td colspan="6"></td>`;
+  tfoot.appendChild(tfr);
+}
+
+function renderStats(stats){
+  const el=document.getElementById('stats-row');el.innerHTML='';
+  [{n:stats['✓'],l:'Match exact',c:'var(--ok)'},{n:stats['⚠'],l:'Écart date',c:'var(--warn)'},{n:stats['MULTI'],l:'Multi-candidats',c:'var(--multi)'},{n:stats['AUCUN'],l:'Aucun match',c:'var(--err)'}]
+  .forEach(({n,l,c})=>{const d=document.createElement('div');d.className='stat-box';d.innerHTML=`<div class="stat-n" style="color:${c}">${n}</div><div class="stat-l">${l}</div>`;el.appendChild(d);});
+}
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+function dlCSV(){
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Score','Statut'];
+  const lines=[h.join(';')];
+  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.montant||'').replace('.',','),c.gap!=null?c.gap:'',c.score!=null?Math.round(c.score*100)+'%':'',status].join(';'));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Rapprochement_${q}${y}_VINOM.csv`;a.click();
+}
+function dlXLSX(){
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  const wb=XLSX.utils.book_new();
+  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)','N° Op VINOM','Date commande VINOM','Montant VINOM (€)','Écart (j)','Score client','Statut'];
+  const data=[];
+  lastRows.forEach(({comm,candidates,status})=>{
+    const c=candidates[0]||{};
+    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.montant||'',c.gap!=null?c.gap:'',c.score!=null?Math.round(c.score*100)+'%':'',status]);
+    candidates.slice(1).forEach((cc,ci)=>data.push(['','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.montant||'',cc.gap!=null?cc.gap:'',cc.score!=null?Math.round(cc.score*100)+'%':'',`↳ candidat ${ci+2}`]));
+  });
+  const tHT=lastRows.reduce((s,{comm})=>s+(parseFloat(comm.montant_ht)||0),0);
+  const tCom=lastRows.reduce((s,{comm})=>s+(parseFloat(comm.commission_ht)||0),0);
+  data.push(['','','','',`TOTAL ${q} ${y}`,tHT,'',tCom,'','','','','','']);
+  const ws=XLSX.utils.aoa_to_sheet([h,...data]);
+  ws['!cols']=[22,22,14,12,14,12,7,14,16,16,14,8,8,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,`Rapprochement ${q} ${y}`);
+  XLSX.writeFile(wb,`Rapprochement_${q}${y}_VINOM.xlsx`);
+}
+
+// ── DÉMARRAGE ────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Restaurer vinoRows depuis cache si dispo
+  const cachedVino = loadFromStorage(STORAGE_KEY_VINO);
+  if (cachedVino) vinoRows = restoreVinoRows(cachedVino);
+  const cachedFourn = loadFromStorage(STORAGE_KEY_FOURN);
+  if (cachedFourn) fournMap = new Map(cachedFourn);
+  const meta = loadFromStorage(STORAGE_KEY_META);
+  if (meta) cacheMeta = meta;
+  renderFixedSection();
+  chk();
+});
+</script>
+</body>
+</html>
