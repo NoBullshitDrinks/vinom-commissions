@@ -21,14 +21,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .subtitle{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
 .badge{background:var(--burg);color:var(--cream);font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:2px;letter-spacing:.8px}
 
-.steps{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
 .step-card{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:18px;position:relative;transition:border-color .2s}
 .step-card.done{border-color:var(--ok);background:#F0FAF4}
 .step-num{font-family:'DM Serif Display',serif;font-size:34px;color:var(--cream2);position:absolute;top:12px;right:14px;line-height:1}
 .step-card.done .step-num{color:rgba(46,125,79,.2)}
 .step-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px}
 .step-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:6px}
-.step-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.step-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
 
 .drop-zone{border:1.5px dashed var(--cream2);border-radius:4px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
@@ -89,7 +89,6 @@ td.ctr{text-align:center;font-family:'DM Mono',monospace}
 .pill-err{background:var(--fill-err);color:var(--err)}
 .cand-row td{color:#999;font-size:10px}
 tfoot tr td{background:var(--cream2);font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
-
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
@@ -103,10 +102,11 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
     <div class="logo">VINOM <span>×</span> Rapprochement</div>
     <div class="subtitle">Commissions fournisseurs ↔ N° Opérations Vinistoria</div>
   </div>
-  <div class="badge">AAA · v2.0</div>
+  <div class="badge">AAA · v3.0</div>
 </div>
 
 <div class="steps">
+  <!-- STEP 1 -->
   <div class="step-card" id="card-pdfs">
     <div class="step-num">1</div>
     <div class="step-label">Étape 1</div>
@@ -121,11 +121,12 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
     <div class="file-list" id="lst-pdfs"></div>
   </div>
 
+  <!-- STEP 2 -->
   <div class="step-card" id="card-vino">
     <div class="step-num">2</div>
     <div class="step-label">Étape 2</div>
     <div class="step-title">Extraction Vinistoria (Excel)</div>
-    <div class="step-desc">Extraction commandes DD avec libellé fournisseur — couvrir la période des PDF</div>
+    <div class="step-desc">Extraction commandes DD — couvrir toute la période des PDF</div>
     <div class="drop-zone" id="drop-vino" onclick="document.getElementById('in-vino').click()">
       <div class="drop-icon">📊</div>
       <div class="drop-text">Déposer l'Excel Vinistoria<br>ou cliquer pour sélectionner</div>
@@ -139,13 +140,28 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
       <input type="number" id="inp-y" value="2026" min="2020" max="2035">
     </div>
   </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="card-fourn">
+    <div class="step-num">3</div>
+    <div class="step-label">Étape 3</div>
+    <div class="step-title">Fichier fournisseurs (Excel)</div>
+    <div class="step-desc">Liste des fournisseurs Vinistoria — fichier fixe, à réutiliser chaque trimestre</div>
+    <div class="drop-zone" id="drop-fourn" onclick="document.getElementById('in-fourn').click()">
+      <div class="drop-icon">🗂️</div>
+      <div class="drop-text">Déposer la liste fournisseurs<br>ou cliquer pour sélectionner</div>
+      <div class="drop-hint">Liste_des_fournisseurs_*.xlsx</div>
+    </div>
+    <input type="file" id="in-fourn" accept=".xlsx,.xls">
+    <div class="file-list" id="lst-fourn"></div>
+  </div>
 </div>
 
 <div class="gen-wrap">
   <button class="btn-gen" id="btn-gen" onclick="run()" disabled>
     <span>⚡</span> Lancer le rapprochement
   </button>
-  <div class="status" id="status">Chargez les fichiers pour commencer.</div>
+  <div class="status" id="status">Chargez les 3 fichiers pour commencer.</div>
 </div>
 <div class="prog-wrap" id="pw"><div class="prog-bar" id="pb"></div></div>
 
@@ -185,7 +201,7 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-let pdfFiles=[], vinoFile=null, lastRows=[];
+let pdfFiles=[], vinoFile=null, fournFile=null, lastRows=[];
 
 // ── DROP ZONES ────────────────────────────────────────────────────────────────
 function setupDZ(did,iid,onFiles){
@@ -201,14 +217,52 @@ function renderList(cid,files,rmFn){
 }
 function rmPdf(i){pdfFiles.splice(i,1);renderList('lst-pdfs',pdfFiles,'rmPdf');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0);chk();}
 function rmVino(){vinoFile=null;renderList('lst-vino',[],()=>{});document.getElementById('drop-vino').classList.remove('has-files');document.getElementById('card-vino').classList.remove('done');chk();}
+function rmFourn(){fournFile=null;renderList('lst-fourn',[],()=>{});document.getElementById('drop-fourn').classList.remove('has-files');document.getElementById('card-fourn').classList.remove('done');chk();}
 setupDZ('drop-pdfs','in-pdfs',files=>{pdfFiles=[...pdfFiles,...files.filter(f=>f.name.endsWith('.pdf'))];renderList('lst-pdfs',pdfFiles,'rmPdf');document.getElementById('drop-pdfs').classList.toggle('has-files',pdfFiles.length>0);document.getElementById('card-pdfs').classList.toggle('done',pdfFiles.length>0);chk();});
 setupDZ('drop-vino','in-vino',files=>{vinoFile=files[0]||null;if(vinoFile){renderList('lst-vino',[vinoFile],'rmVino');document.getElementById('drop-vino').classList.add('has-files');document.getElementById('card-vino').classList.add('done');}chk();});
-function chk(){const ok=pdfFiles.length>0&&vinoFile;document.getElementById('btn-gen').disabled=!ok;ss(ok?'Prêt — cliquez sur "Lancer le rapprochement".':'Chargez les fichiers pour commencer.','');}
+setupDZ('drop-fourn','in-fourn',files=>{fournFile=files[0]||null;if(fournFile){renderList('lst-fourn',[fournFile],'rmFourn');document.getElementById('drop-fourn').classList.add('has-files');document.getElementById('card-fourn').classList.add('done');}chk();});
+
+function chk(){
+  const ok=pdfFiles.length>0&&vinoFile&&fournFile;
+  document.getElementById('btn-gen').disabled=!ok;
+  const missing=[];
+  if(!pdfFiles.length)missing.push('PDF fournisseurs');
+  if(!vinoFile)missing.push('extraction Vinistoria');
+  if(!fournFile)missing.push('liste fournisseurs');
+  ss(ok?'Prêt — cliquez sur "Lancer le rapprochement".':`Manque : ${missing.join(', ')}.`,'');
+}
 function ss(m,c){const e=document.getElementById('status');e.textContent=m;e.className='status '+(c||'');}
 function sp(p){document.getElementById('pw').classList.toggle('vis',p>0&&p<100);document.getElementById('pb').style.width=p+'%';}
 
+// ── LECTURE FICHIER FOURNISSEURS ──────────────────────────────────────────────
+// Retourne un Map: code (int) -> nom (string)
+async function readFournisseurs(){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const data=XLSX.utils.sheet_to_json(ws,{header:1});
+        const headers=data[0].map(h=>String(h||'').trim());
+        const iCode=headers.indexOf('N° Fourn.');
+        const iNom=headers.indexOf('Nom 1');
+        if(iCode<0||iNom<0)throw new Error('Colonnes "N° Fourn." ou "Nom 1" introuvables dans le fichier fournisseurs');
+        const map=new Map();
+        for(let i=1;i<data.length;i++){
+          const code=parseInt(data[i][iCode]);
+          const nom=String(data[i][iNom]||'').trim();
+          if(!isNaN(code)&&nom)map.set(code,nom);
+        }
+        res(map);
+      }catch(err){rej(err);}
+    };
+    reader.readAsArrayBuffer(fournFile);
+  });
+}
+
 // ── LECTURE EXCEL VINISTORIA ──────────────────────────────────────────────────
-async function readVinistoria(){
+async function readVinistoria(fournMap){
   return new Promise((res,rej)=>{
     const reader=new FileReader();
     reader.onload=e=>{
@@ -217,41 +271,31 @@ async function readVinistoria(){
         const ws=wb.Sheets[wb.SheetNames[0]];
         const data=XLSX.utils.sheet_to_json(ws,{header:1});
         const headers=data[0].map(h=>String(h||'').trim());
-
-        // Chercher colonnes par nom — compatible avec les deux formats de fichier
-        function findCol(names){for(const n of names){const i=headers.indexOf(n);if(i>=0)return i;}return -1;}
-        const iNop   = findCol(['N° Opération','N° Opration']);
-        const iFourn = findCol(['(Fourn/Dom)','Fourn/Dom']);  // libellé en priorité
-        const iFourn2= findCol(['Fourn/Dom']);                // code en fallback
-        const iNom1  = findCol(['Nom 1']);
-        const iRais  = findCol(['Rais. Soc.']);
-        const iMt    = findCol(['TOTAL HT (€)','TOTAL HT']);
-        const iDate  = findCol(['Date Création','Date Creation']);
-
-        // Déterminer si la colonne fournisseur est libellé ou code
-        // Si le premier fichier: col "(Fourn/Dom)" = libellé, "Fourn/Dom" = code
-        // Si le nouveau fichier: "Fourn/Dom" = code uniquement
-        // On préfère le libellé si disponible
-        const hasFournLibelle = headers.includes('(Fourn/Dom)');
-        const iFournUse = hasFournLibelle ? findCol(['(Fourn/Dom)']) : findCol(['Fourn/Dom']);
-
+        function fc(names){for(const n of names){const i=headers.indexOf(n);if(i>=0)return i;}return -1;}
+        const iNop =fc(['N° Opération','N° Opration']);
+        const iFourn=fc(['Fourn/Dom']);
+        const iNom1 =fc(['Nom 1']);
+        const iRais =fc(['Rais. Soc.']);
+        const iMt   =fc(['TOTAL HT (€)','TOTAL HT']);
+        const iDate =fc(['Date Création','Date Creation']);
         const rows=[];
         for(let i=1;i<data.length;i++){
           const r=data[i];
           const nop=r[iNop];
-          const fournRaw=String(r[iFournUse]||'');
+          const fournCode=parseInt(r[iFourn]);
+          if(!nop||isNaN(fournCode))continue;
+          // Résolution nom fournisseur via fichier fournisseurs
+          const fournNom=fournMap.get(fournCode)||null;
           const nom1=String(r[iNom1]||'').toUpperCase().trim();
           const rais=String(r[iRais]||'').toUpperCase().trim();
           let mt=r[iMt];
-          if(typeof mt==='string') mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));
+          if(typeof mt==='string')mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));
           else mt=parseFloat(mt);
           let date=r[iDate];
           if(date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
           else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
           else date=null;
-          if(nop&&fournRaw){
-            rows.push({nop:parseInt(nop),fourn:fournRaw,fournNorm:normalize(fournRaw),nom1,rais,montant:isNaN(mt)?null:mt,date});
-          }
+          rows.push({nop:parseInt(nop),fournCode,fournNom,nom1,rais,montant:isNaN(mt)?null:mt,date});
         }
         res(rows);
       }catch(err){rej(err);}
@@ -267,7 +311,7 @@ async function extractPdf(b64,filename){
   const prompt=`Fichier: ${filename}. Extrais TOUTES les lignes de commissions.
 Retourne UNIQUEMENT un JSON valide (aucun texte autour, aucun markdown):
 [{"fournisseur":"nom complet du fournisseur émetteur","client":"nom du client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"agent":"nom agent si présent sinon vide"}]
-Règles: inclure lignes négatives (avoirs). Exclure lignes montant_ht=0 ET commission_ht=0. taux=nombre entier. UNIQUEMENT le JSON.`;
+Règles: inclure lignes négatives (avoirs). Exclure lignes où montant_ht=0 ET commission_ht=0. taux=nombre entier. UNIQUEMENT le JSON.`;
   const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
@@ -275,7 +319,7 @@ Règles: inclure lignes négatives (avoirs). Exclure lignes montant_ht=0 ET comm
   return JSON.parse(t.replace(/```json|```/g,'').trim());
 }
 
-// ── NORMALISATION ─────────────────────────────────────────────────────────────
+// ── NORMALISATION & SIMILARITÉ ────────────────────────────────────────────────
 function normalize(s){
   return String(s).toUpperCase()
     .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,'')
@@ -296,43 +340,45 @@ function clientSim(pdf,nom1,rais){
   return Math.max(s1,s2,c3);
 }
 
-// ── MATCHING FOURNISSEUR PAR SIMILARITÉ DE NOM ────────────────────────────────
-// Construit un cache: nom_pdf_normalisé -> nom_vino le plus proche
-const fournCache={};
-function getFournVino(fournPdf, vinoRows){
+// ── MATCHING FOURNISSEUR: nom PDF -> code Vinistoria ──────────────────────────
+// On cherche le code fournisseur Vinistoria dont le "Nom 1" est le plus similaire au nom extrait du PDF
+// Cache par nom PDF normalisé
+const fournCodeCache={};
+function getFournCode(fournPdf, vinoRows){
   const key=normalize(fournPdf);
-  if(fournCache[key])return fournCache[key];
-  // Trouver le libellé Vinistoria le plus similaire
-  const uniqueFourns=[...new Set(vinoRows.map(r=>r.fourn).filter(Boolean))];
-  let best=null,bestScore=0;
-  for(const f of uniqueFourns){
-    const s=strSim(fournPdf,f);
-    if(s>bestScore){bestScore=s;best=f;}
+  if(key in fournCodeCache)return fournCodeCache[key];
+  // Collecter tous les codes+noms uniques dans Vinistoria
+  const seen=new Map(); // code -> nom
+  vinoRows.forEach(r=>{if(r.fournCode&&r.fournNom)seen.set(r.fournCode,r.fournNom);});
+  let bestCode=null,bestScore=0;
+  for(const [code,nom] of seen){
+    const s=strSim(fournPdf,nom);
+    if(s>bestScore){bestScore=s;bestCode=code;}
   }
-  // Seuil minimum 0.30 pour éviter les faux positifs fournisseur
-  const result=bestScore>=0.30?best:null;
-  fournCache[key]=result;
+  // Seuil minimum 0.30
+  const result=bestScore>=0.30?bestCode:null;
+  fournCodeCache[key]=result;
   return result;
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
-function matchComm(comm, vinoRows){
-  const {fournisseur,client,date:dateStr,montant_ht}=comm;
+function matchComm(comm,vinoRows){
+  const{fournisseur,client,date:dateStr,montant_ht}=comm;
   const isAvoir=montant_ht<0;
   const amt=Math.abs(parseFloat(montant_ht));
 
   let datePdf=null;
   if(dateStr){const[d,m,y]=dateStr.split('/');datePdf=new Date(+y,+m-1,+d);if(isNaN(datePdf.getTime()))datePdf=null;}
 
-  // FILTRE 1 — fournisseur par similarité de nom
-  const fournVino=getFournVino(fournisseur,vinoRows);
-  if(!fournVino)return{candidates:[],status:'FOURNISSEUR INCONNU'};
-  let pool=vinoRows.filter(r=>r.fourn===fournVino);
-  if(pool.length===0)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  // FILTRE 1 — fournisseur: nom PDF -> code Vinistoria (exact)
+  const fournCode=getFournCode(fournisseur,vinoRows);
+  if(!fournCode)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  let pool=vinoRows.filter(r=>r.fournCode===fournCode);
+  if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
 
   // FILTRE 2 — client similarité ≥ 0.55
   pool=pool.map(r=>({...r,score:clientSim(client,r.nom1,r.rais)})).filter(r=>r.score>=0.55);
-  if(pool.length===0)return{candidates:[],status:'CLIENT NON TROUVÉ'};
+  if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
 
   // FILTRE 3 — montant ±6%
   pool=pool.filter(r=>{
@@ -341,12 +387,12 @@ function matchComm(comm, vinoRows){
     if(rv<=0&&!isAvoir)return false;
     return Math.abs(rv-amt)/amt<0.06;
   });
-  if(pool.length===0)return{candidates:[],status:'MONTANT NON TROUVÉ'};
+  if(!pool.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
 
-  // FILTRE 4 — date: commande VINOM avant facture fournisseur
+  // FILTRE 4 — date: commande VINOM avant facture (0-10j normal, élargi avec warning)
   let dateWarning=false;
   if(datePdf){
-    pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/(86400000)):null}));
+    pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/86400000):null}));
     const normal=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=10);
     if(normal.length>0){pool=normal;}
     else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=90);pool=ext.length>0?ext:pool;dateWarning=true;}
@@ -372,19 +418,22 @@ async function run(){
   document.getElementById('warns-area').innerHTML='';
   sp(5);
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
-  // Reset cache fournisseurs à chaque run
-  Object.keys(fournCache).forEach(k=>delete fournCache[k]);
+  Object.keys(fournCodeCache).forEach(k=>delete fournCodeCache[k]);
 
   try{
-    ss('Lecture Vinistoria…','processing');sp(10);
-    const vinoRows=await readVinistoria();
-    ss(`Vinistoria: ${vinoRows.length} lignes chargées`,'processing');sp(15);
+    ss('Lecture fichier fournisseurs…','processing');sp(8);
+    const fournMap=await readFournisseurs();
+    ss(`Fournisseurs: ${fournMap.size} entrées chargées`,'processing');sp(12);
+
+    ss('Lecture Vinistoria…','processing');sp(15);
+    const vinoRows=await readVinistoria(fournMap);
+    ss(`Vinistoria: ${vinoRows.length} lignes chargées`,'processing');sp(20);
 
     const allComms=[],warns=[];
     for(let i=0;i<pdfFiles.length;i++){
       const f=pdfFiles[i];
       ss(`Extraction PDF ${i+1}/${pdfFiles.length}: ${f.name}`,'processing');
-      sp(15+Math.round((i/pdfFiles.length)*55));
+      sp(20+Math.round((i/pdfFiles.length)*50));
       try{const b64=await readBase64(f);const comms=await extractPdf(b64,f.name);comms.forEach(c=>allComms.push({...c,_src:f.name}));}
       catch(e){warns.push(`${f.name}: erreur — ${e.message}`);}
     }
@@ -414,7 +463,7 @@ async function run(){
   btn.disabled=false;btn.innerHTML='<span>⚡</span> Lancer le rapprochement';
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
+// ── RENDER TABLE ──────────────────────────────────────────────────────────────
 function fmt(n){return n!=null?Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 
 function renderTable(rows,q,y){
@@ -436,7 +485,7 @@ function renderTable(rows,q,y){
       <td class="mono">${comm.agent||'—'}</td>
       <td class="ctr">${comm.date||'—'}</td>
       <td class="mono">${comm.n_piece||'—'}</td>
-      <td class="num" style="${isAvoir?'color:var(--err)':''}">${fmt(comm.montant_ht)}</td>
+      <td class="num"${isAvoir?' style="color:var(--err)"':''}>${fmt(comm.montant_ht)}</td>
       <td class="ctr">${comm.taux}%</td>
       <td class="num">${fmt(comm.commission_ht)}</td>
       <td class="mono" style="font-weight:700">${c.nop||'—'}</td>
