@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VINOM · Commissions & Rapprochement</title>
+<title>VINOM · Commissions</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -12,242 +12,202 @@
   --ok:#2E7D4F;--warn:#8B6914;--multi:#B05C00;--err:#C0392B;--white:#FDFAF5;
   --fill-ok:#E2EFDA;--fill-warn:#FFF2CC;--fill-multi:#FCE4D6;--fill-err:#FFD7D7;--fill-cand:#FAF7F2;
 }
-body{font-family:"DM Sans",sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
 .app{max-width:1200px;margin:0 auto;padding:28px 20px 60px}
-
 .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid var(--cream2)}
-.logo{font-family:"DM Serif Display",serif;font-size:24px;color:var(--burg)}.logo span{color:var(--gold)}
-.subtitle{font-size:11px;color:var(--muted);font-family:"DM Mono",monospace;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
-.badge{background:var(--burg);color:var(--cream);font-size:11px;font-family:"DM Mono",monospace;padding:4px 10px;border-radius:2px;letter-spacing:.8px}
+.logo{font-family:'DM Serif Display',serif;font-size:24px;color:var(--burg)}.logo span{color:var(--gold)}
+.subtitle{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+.badge{background:var(--burg);color:var(--cream);font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:2px}
 
-.section-required{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:18px;margin-bottom:14px}
+.sec-req{background:var(--white);border:1.5px solid var(--cream2);border-radius:6px;padding:18px;margin-bottom:14px}
 .sec-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .sec-desc{font-size:11px;color:var(--muted);margin-bottom:10px}
-.tag-req{background:var(--burg);color:var(--cream);font-size:9px;font-family:"DM Mono",monospace;padding:2px 7px;border-radius:10px}
-.tag-ok{background:var(--fill-ok);color:var(--ok);font-size:9px;font-family:"DM Mono",monospace;padding:2px 7px;border-radius:10px;border:1px solid var(--ok)}
-.tag-ko{background:var(--fill-err);color:var(--err);font-size:9px;font-family:"DM Mono",monospace;padding:2px 7px;border-radius:10px;border:1px solid var(--err)}
+.tag-req{background:var(--burg);color:var(--cream);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px}
+.tag-ok{background:var(--fill-ok);color:var(--ok);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;border:1px solid var(--ok)}
+.tag-ko{background:var(--fill-err);color:var(--err);font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;border:1px solid var(--err)}
 
-.section-fixed{border:1.5px solid var(--cream2);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.sec-fix{border:1.5px solid var(--cream2);border-radius:6px;overflow:hidden;margin-bottom:14px}
 .sfh{background:var(--cream);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-bottom:1.5px solid var(--cream2)}
 .sfh:hover{background:var(--cream2)}
-.sfh-title{font-weight:600;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
-.sfb{background:var(--white);padding:16px 18px;display:none}
-.sfb.open{display:block}
-.chev{font-size:11px;color:var(--muted);transition:transform .2s;display:inline-block}
-.chev.open{transform:rotate(180deg)}
+.sfh-t{font-weight:600;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.sfb{background:var(--white);padding:16px 18px;display:none}.sfb.open{display:block}
+.chev{font-size:11px;color:var(--muted);transition:transform .2s;display:inline-block}.chev.open{transform:rotate(180deg)}
 
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.col-label{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:3px}
-.col-desc{font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col-lbl{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:3px}
+.col-dsc{font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4}
 
 .cached-file{display:flex;align-items:center;gap:8px;background:var(--fill-ok);border:1px solid rgba(46,125,79,.25);border-radius:4px;padding:7px 10px;font-size:11px;margin-bottom:6px}
-.cf-icon{font-size:14px}
-.cf-name{flex:1;font-family:"DM Mono",monospace;color:var(--ink);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cf-meta{font-size:9px;color:var(--muted);font-family:"DM Mono",monospace;white-space:nowrap;margin-right:4px}
-.cf-btn{cursor:pointer;background:none;border:1px solid rgba(46,125,79,.4);border-radius:3px;padding:2px 8px;font-size:9px;color:var(--ok);font-family:"DM Mono",monospace;transition:all .15s;white-space:nowrap}
+.cf-ic{font-size:14px}.cf-nm{flex:1;font-family:'DM Mono',monospace;color:var(--ink);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-mt{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;margin-right:4px}
+.cf-btn{cursor:pointer;background:none;border:1px solid rgba(46,125,79,.4);border-radius:3px;padding:2px 8px;font-size:9px;color:var(--ok);font-family:'DM Mono',monospace;transition:all .15s;white-space:nowrap}
 .cf-btn:hover{background:var(--ok);color:white}
-.missing-notice{display:flex;align-items:center;gap:8px;background:var(--fill-err);border:1px solid rgba(192,57,43,.25);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--err);margin-bottom:10px}
+.miss-notice{display:flex;align-items:center;gap:8px;background:var(--fill-err);border:1px solid rgba(192,57,43,.25);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--err);margin-bottom:10px}
 
-.drop-zone{border:1.5px dashed var(--cream2);border-radius:4px;padding:10px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-.drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
-.drop-zone.has-files{border-color:var(--ok);background:rgba(46,125,79,.05)}
-.drop-icon{font-size:18px}.drop-text{font-size:11px;color:var(--muted);line-height:1.3}.drop-hint{font-size:9px;color:var(--muted);font-family:"DM Mono",monospace}
+.dz{border:1.5px dashed var(--cream2);border-radius:4px;padding:10px;cursor:pointer;transition:all .2s;text-align:center;background:var(--cream);min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.dz:hover,.dz.dragover{border-color:var(--gold);background:rgba(201,151,58,.05)}
+.dz.has-files{border-color:var(--ok);background:rgba(46,125,79,.05)}
+.dz-ic{font-size:18px}.dz-tx{font-size:11px;color:var(--muted);line-height:1.3}.dz-ht{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
 input[type=file]{display:none}
-.file-list{margin-top:6px;display:flex;flex-direction:column;gap:3px}
-.file-item{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--cream2);border-radius:3px;padding:4px 7px;font-size:10px}
-.fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"DM Mono",monospace;color:var(--ink)}
+.fl{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.fi{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--cream2);border-radius:3px;padding:4px 7px;font-size:10px}
+.fi-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Mono',monospace;color:var(--ink)}
 .fi-rm{cursor:pointer;color:var(--muted);transition:color .15s}.fi-rm:hover{color:var(--err)}
 
-.period-row{display:flex;gap:8px;margin-top:10px;align-items:center}
-.period-row label{font-size:11px;color:var(--muted)}
-.period-row select,.period-row input{border:1.5px solid var(--cream2);border-radius:4px;padding:6px 10px;font-family:"DM Mono",monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
-.period-row select:focus,.period-row input:focus{border-color:var(--gold)}
-.period-row select{width:72px}.period-row input{width:72px}
+.pr{display:flex;gap:8px;margin-top:10px;align-items:center}
+.pr label{font-size:11px;color:var(--muted)}
+.pr select,.pr input{border:1.5px solid var(--cream2);border-radius:4px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
+.pr select:focus,.pr input:focus{border-color:var(--gold)}
+.pr select{width:72px}.pr input{width:72px}
 
-.gen-wrap{margin:16px 0;display:flex;align-items:center;gap:14px}
-.btn-gen{background:var(--burg);color:var(--cream);border:none;border-radius:4px;padding:13px 32px;font-family:"DM Sans",sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:9px}
-.btn-gen:hover{background:var(--burg2)}.btn-gen:disabled{opacity:.4;cursor:not-allowed}
-.status{flex:1;font-size:11px;font-family:"DM Mono",monospace;color:var(--muted);line-height:1.5}
-.status.processing{color:var(--gold)}.status.ok{color:var(--ok)}.status.error{color:var(--err)}
-.prog-wrap{height:2px;background:var(--cream2);margin-bottom:16px;overflow:hidden;display:none;border-radius:2px}
-.prog-wrap.vis{display:block}
-.prog-bar{height:100%;background:linear-gradient(90deg,var(--burg),var(--gold));transition:width .4s;width:0%}
+.gw{margin:16px 0;display:flex;align-items:center;gap:14px}
+.btn-g{background:var(--burg);color:var(--cream);border:none;border-radius:4px;padding:13px 32px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:9px}
+.btn-g:hover{background:var(--burg2)}.btn-g:disabled{opacity:.4;cursor:not-allowed}
+.st{flex:1;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.5}
+.st.p{color:var(--gold)}.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+.pw{height:2px;background:var(--cream2);margin-bottom:16px;overflow:hidden;display:none;border-radius:2px}.pw.v{display:block}
+.pb{height:100%;background:linear-gradient(90deg,var(--burg),var(--gold));transition:width .4s;width:0%}
 
-.results{display:none;margin-top:6px}.results.vis{display:block}
-.results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.results-title{font-family:"DM Serif Display",serif;font-size:18px;color:var(--burg)}
-.results-meta{font-size:10px;font-family:"DM Mono",monospace;color:var(--muted)}
-.dl-btns{display:flex;gap:8px}
-.btn-dl{background:var(--gold);color:var(--ink);border:none;border-radius:3px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;transition:background .15s}
-.btn-dl:hover{background:var(--gold2)}
-.btn-dl.sec{background:var(--white);border:1.5px solid var(--cream2);color:var(--ink2)}.btn-dl.sec:hover{border-color:var(--gold)}
+.res{display:none;margin-top:6px}.res.v{display:block}
+.rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rt{font-family:'DM Serif Display',serif;font-size:18px;color:var(--burg)}
+.rm{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted)}
+.dlb{display:flex;gap:8px}
+.bd{background:var(--gold);color:var(--ink);border:none;border-radius:3px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
+.bd:hover{background:var(--gold2)}.bd.s{background:var(--white);border:1.5px solid var(--cream2);color:var(--ink2)}.bd.s:hover{border-color:var(--gold)}
 
-.stats-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-.stat-box{background:var(--white);border:1.5px solid var(--cream2);border-radius:4px;padding:8px 16px;text-align:center;min-width:80px}
-.stat-n{font-family:"DM Serif Display",serif;font-size:22px}
-.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:"DM Mono",monospace;color:var(--muted)}
+.sr{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.sb{background:var(--white);border:1.5px solid var(--cream2);border-radius:4px;padding:8px 16px;text-align:center;min-width:80px}
+.sn{font-family:'DM Serif Display',serif;font-size:22px}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;color:var(--muted)}
 
-.legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.leg-item{display:flex;align-items:center;gap:6px;font-size:11px}
-.leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.leg{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.li{display:flex;align-items:center;gap:6px;font-size:11px}
+.ld{width:12px;height:12px;border-radius:2px;flex-shrink:0}
 
-.tbl-wrap{overflow-x:auto;border:1.5px solid var(--cream2);border-radius:6px;max-height:650px;overflow-y:auto}
+.tw{overflow-x:auto;border:1.5px solid var(--cream2);border-radius:6px;max-height:650px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:11px;min-width:1300px}
 thead tr{background:var(--burg);color:var(--cream);position:sticky;top:0;z-index:10}
-thead th{padding:9px 10px;text-align:left;font-family:"DM Mono",monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+thead th{padding:9px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 tbody tr{border-bottom:1px solid var(--cream2)}
 td{padding:7px 10px;vertical-align:middle}
-td.mono{font-family:"DM Mono",monospace;font-size:10px}
-td.num{text-align:right;font-family:"DM Mono",monospace}
-td.ctr{text-align:center;font-family:"DM Mono",monospace}
-.status-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-family:"DM Mono",monospace;font-weight:600;white-space:nowrap}
-.pill-ok{background:var(--fill-ok);color:var(--ok)}
-.pill-warn{background:var(--fill-warn);color:var(--warn)}
-.pill-multi{background:var(--fill-multi);color:var(--multi)}
-.pill-err{background:var(--fill-err);color:var(--err)}
-.pill-pay{background:var(--fill-ok);color:var(--ok);font-size:8px}
-.pill-nopay{background:var(--fill-warn);color:var(--warn);font-size:8px}
-.cand-row td{color:#999;font-size:10px;background:var(--fill-cand)}
-tfoot tr td{background:var(--cream2);font-weight:700;font-family:"DM Mono",monospace;font-size:11px}
-.fb{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-family:"DM Mono",monospace;white-space:nowrap}
-.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
+td.mo{font-family:'DM Mono',monospace;font-size:10px}td.nu{text-align:right;font-family:'DM Mono',monospace}td.ct{text-align:center;font-family:'DM Mono',monospace}
+.pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-family:'DM Mono',monospace;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--fill-ok);color:var(--ok)}.p-warn{background:var(--fill-warn);color:var(--warn)}
+.p-multi{background:var(--fill-multi);color:var(--multi)}.p-err{background:var(--fill-err);color:var(--err)}
+.p-pay{background:var(--fill-ok);color:var(--ok);font-size:8px}.p-nopay{background:var(--fill-warn);color:var(--warn);font-size:8px}
+.cand td{color:#999;font-size:10px;background:var(--fill-cand)}
+tfoot td{background:var(--cream2);font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
+.fb{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-family:'DM Mono',monospace;white-space:nowrap}
+.sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(247,242,234,.3);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
+hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 </style>
 </head>
 <body>
 <div class="app">
-
 <div class="header">
-  <div>
-    <div class="logo">VINOM <span>×</span> Commissions</div>
-    <div class="subtitle">Relevé · Agents · Rapprochement Vinistoria — AAA</div>
-  </div>
-  <div class="badge">v1.0 unified</div>
+  <div><div class="logo">VINOM <span>×</span> Commissions</div><div class="subtitle">Relevé · Agents · N° Opérations Vinistoria — AAA</div></div>
+  <div class="badge">v2.0</div>
 </div>
 
-<!-- PDF: toujours requis -->
-<div class="section-required">
+<!-- PDF -->
+<div class="sec-req">
   <div class="sec-title">📄 Relevés fournisseurs (PDF) <span class="tag-req">À charger à chaque trimestre</span></div>
   <div class="sec-desc">Relevés de commissions reçus des fournisseurs — tous formats acceptés</div>
-  <div class="drop-zone" id="drop-pdfs" onclick="document.getElementById('in-pdfs').click()">
-    <div class="drop-icon">📄</div>
-    <div class="drop-text">Déposer les PDF ici ou cliquer pour sélectionner</div>
-    <div class="drop-hint">Plusieurs fichiers acceptés</div>
+  <div class="dz" id="dz-pdf" onclick="document.getElementById('in-pdf').click()">
+    <div class="dz-ic">📄</div><div class="dz-tx">Déposer les PDF ici ou cliquer</div><div class="dz-ht">Plusieurs fichiers acceptés</div>
   </div>
-  <input type="file" id="in-pdfs" accept=".pdf" multiple>
-  <div class="file-list" id="lst-pdfs"></div>
-  <div class="period-row">
-    <label>Période :</label>
+  <input type="file" id="in-pdf" accept=".pdf" multiple>
+  <div class="fl" id="fl-pdf"></div>
+  <div class="pr"><label>Période :</label>
     <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
     <input type="number" id="inp-y" value="2026" min="2020" max="2035">
   </div>
 </div>
 
-<!-- FICHIERS DE RÉFÉRENCE: cache -->
-<div class="section-fixed">
-  <div class="sfh" onclick="toggleFixed()">
-    <div class="sfh-title">🗂️ Fichiers de référence <span id="ref-tag" class="tag-ko">Non chargés</span></div>
+<!-- FICHIERS FIXES -->
+<div class="sec-fix">
+  <div class="sfh" onclick="toggleRef()">
+    <div class="sfh-t">🗂️ Fichiers de référence <span id="ref-tag" class="tag-ko">Non chargés</span></div>
     <span class="chev" id="ref-chev">▼</span>
   </div>
   <div class="sfb" id="ref-body">
-    <div id="ref-display"></div>
-    <div id="ref-update" style="display:none">
+    <div id="ref-disp"></div>
+    <!-- Zone mise à jour (cachée par défaut) -->
+    <div id="ref-upd" style="display:none">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Déposez le fichier à mettre à jour :</div>
-      <div class="three-col">
+      <div class="two-col">
         <div>
-          <div class="col-label">Extraction Vinistoria</div>
-          <div class="col-desc">Commandes DD — couvrir au moins 1 an</div>
-          <div class="drop-zone" id="drop-vino-u" onclick="document.getElementById('in-vino-u').click()">
-            <div class="drop-icon">📊</div><div class="drop-text">Mettre à jour</div>
-            <div class="drop-hint">Extraction_Commandes_DD_*.xlsx</div>
+          <div class="col-lbl">Extraction Vinistoria</div>
+          <div class="col-dsc">Commandes DD — couvrir au moins 1 an</div>
+          <div class="dz" id="dz-vino-u" onclick="document.getElementById('in-vino-u').click()">
+            <div class="dz-ic">📊</div><div class="dz-tx">Mettre à jour</div><div class="dz-ht">Extraction_Commandes_DD_*.xlsx</div>
           </div>
           <input type="file" id="in-vino-u" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-vino-u"></div>
+          <div class="fl" id="fl-vino-u"></div>
         </div>
         <div>
-          <div class="col-label">Liste fournisseurs</div>
-          <div class="col-desc">Codes fournisseurs Vinistoria</div>
-          <div class="drop-zone" id="drop-fourn-u" onclick="document.getElementById('in-fourn-u').click()">
-            <div class="drop-icon">🗂️</div><div class="drop-text">Mettre à jour</div>
-            <div class="drop-hint">Liste_des_fournisseurs_*.xlsx</div>
+          <div class="col-lbl">Liste fournisseurs</div>
+          <div class="col-dsc">Table codes fournisseurs Vinistoria</div>
+          <div class="dz" id="dz-fourn-u" onclick="document.getElementById('in-fourn-u').click()">
+            <div class="dz-ic">🗂️</div><div class="dz-tx">Mettre à jour</div><div class="dz-ht">Liste_des_fournisseurs_*.xlsx</div>
           </div>
           <input type="file" id="in-fourn-u" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-fourn-u"></div>
-        </div>
-        <div>
-          <div class="col-label">Liste clients / agents</div>
-          <div class="col-desc">Attribution clients → agents</div>
-          <div class="drop-zone" id="drop-cli-u" onclick="document.getElementById('in-cli-u').click()">
-            <div class="drop-icon">👥</div><div class="drop-text">Mettre à jour</div>
-            <div class="drop-hint">Liste_clients_par_sous_agent.xlsx</div>
-          </div>
-          <input type="file" id="in-cli-u" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-cli-u"></div>
+          <div class="fl" id="fl-fourn-u"></div>
         </div>
       </div>
     </div>
+    <!-- Première utilisation -->
     <div id="ref-first">
-      <div class="missing-notice">⚠ Première utilisation — chargez les trois fichiers de référence</div>
-      <div class="three-col">
+      <div class="miss-notice">⚠ Première utilisation — chargez les deux fichiers de référence</div>
+      <div class="two-col">
         <div>
-          <div class="col-label">Extraction Vinistoria</div>
-          <div class="col-desc">Commandes DD — couvrir au moins 1 an</div>
-          <div class="drop-zone" id="drop-vino-f" onclick="document.getElementById('in-vino-f').click()">
-            <div class="drop-icon">📊</div><div class="drop-text">Déposer l'extraction</div>
-            <div class="drop-hint">Extraction_Commandes_DD_*.xlsx</div>
+          <div class="col-lbl">Extraction Vinistoria</div>
+          <div class="col-dsc">Commandes DD — couvrir au moins 1 an en arrière</div>
+          <div class="dz" id="dz-vino-f" onclick="document.getElementById('in-vino-f').click()">
+            <div class="dz-ic">📊</div><div class="dz-tx">Déposer l'extraction Vinistoria</div><div class="dz-ht">Extraction_Commandes_DD_*.xlsx</div>
           </div>
           <input type="file" id="in-vino-f" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-vino-f"></div>
+          <div class="fl" id="fl-vino-f"></div>
         </div>
         <div>
-          <div class="col-label">Liste fournisseurs</div>
-          <div class="col-desc">Codes fournisseurs Vinistoria</div>
-          <div class="drop-zone" id="drop-fourn-f" onclick="document.getElementById('in-fourn-f').click()">
-            <div class="drop-icon">🗂️</div><div class="drop-text">Déposer la liste</div>
-            <div class="drop-hint">Liste_des_fournisseurs_*.xlsx</div>
+          <div class="col-lbl">Liste fournisseurs</div>
+          <div class="col-dsc">Permet de relier les codes numériques aux noms</div>
+          <div class="dz" id="dz-fourn-f" onclick="document.getElementById('in-fourn-f').click()">
+            <div class="dz-ic">🗂️</div><div class="dz-tx">Déposer la liste fournisseurs</div><div class="dz-ht">Liste_des_fournisseurs_*.xlsx</div>
           </div>
           <input type="file" id="in-fourn-f" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-fourn-f"></div>
-        </div>
-        <div>
-          <div class="col-label">Liste clients / agents</div>
-          <div class="col-desc">Attribution clients → agents</div>
-          <div class="drop-zone" id="drop-cli-f" onclick="document.getElementById('in-cli-f').click()">
-            <div class="drop-icon">👥</div><div class="drop-text">Déposer la liste</div>
-            <div class="drop-hint">Liste_clients_par_sous_agent.xlsx</div>
-          </div>
-          <input type="file" id="in-cli-f" accept=".xlsx,.xls">
-          <div class="file-list" id="lst-cli-f"></div>
+          <div class="fl" id="fl-fourn-f"></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="gen-wrap">
-  <button class="btn-gen" id="btn-gen" onclick="run()" disabled><span>⚡</span> Générer</button>
-  <div class="status" id="status">Chargement…</div>
+<div class="gw">
+  <button class="btn-g" id="btn-g" onclick="run()" disabled><span>⚡</span> Générer</button>
+  <div class="st" id="st">Chargement…</div>
 </div>
-<div class="prog-wrap" id="pw"><div class="prog-bar" id="pb"></div></div>
+<div class="pw" id="pw"><div class="pb" id="pb"></div></div>
 
-<div class="results" id="results">
-  <hr class="div">
-  <div class="results-hdr">
-    <div><div class="results-title">Commissions <span id="period-label"></span></div><div class="results-meta" id="rmeta"></div></div>
-    <div class="dl-btns">
-      <button class="btn-dl sec" onclick="dlCSV()">⬇ CSV</button>
-      <button class="btn-dl" onclick="dlXLSX()">⬇ Excel</button>
+<div class="res" id="res">
+  <hr class="dv">
+  <div class="rh">
+    <div><div class="rt">Commissions <span id="plbl"></span></div><div class="rm" id="rm"></div></div>
+    <div class="dlb">
+      <button class="bd s" onclick="dlCSV()">⬇ CSV</button>
+      <button class="bd" onclick="dlXLSX()">⬇ Excel</button>
     </div>
   </div>
-  <div class="stats-row" id="stats-row"></div>
-  <div class="legend">
-    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-ok);border:1px solid var(--ok)"></div><span>N° Op. trouvé — date OK</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-warn);border:1px solid var(--warn)"></div><span>Trouvé — écart date &gt;10j</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-multi);border:1px solid var(--multi)"></div><span>Plusieurs candidats</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--fill-err);border:1px solid var(--err)"></div><span>Non trouvé</span></div>
+  <div class="sr" id="sr"></div>
+  <div class="leg">
+    <div class="li"><div class="ld" style="background:var(--fill-ok);border:1px solid var(--ok)"></div><span>N° Op. trouvé — date OK (0–30j)</span></div>
+    <div class="li"><div class="ld" style="background:var(--fill-warn);border:1px solid var(--warn)"></div><span>Trouvé — écart date &gt;30j</span></div>
+    <div class="li"><div class="ld" style="background:var(--fill-multi);border:1px solid var(--multi)"></div><span>Plusieurs candidats</span></div>
+    <div class="li"><div class="ld" style="background:var(--fill-err);border:1px solid var(--err)"></div><span>Non trouvé</span></div>
   </div>
-  <div class="tbl-wrap">
+  <div class="tw">
     <table>
       <thead><tr>
         <th>Fournisseur</th><th>Client</th><th>Agent</th>
@@ -255,169 +215,151 @@ hr.div{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
         <th>N° Op. VINOM</th><th>Date commande</th><th>Montant VINOM</th><th>Écart (j)</th>
         <th>Statut rapprochement</th>
       </tr></thead>
-      <tbody id="rtbody"></tbody>
-      <tfoot id="rtfoot"></tfoot>
+      <tbody id="tb"></tbody>
+      <tfoot id="tf"></tfoot>
     </table>
   </div>
-  <div id="warns-area"></div>
+  <div id="wa"></div>
+</div>
 </div>
 
-</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let pdfFiles=[], lastRows=[];
-let vinoRows=null, fournMap=null, clientMap=null;
-let meta={vino:null,fourn:null,cli:null};
+let pdfs=[], lastRows=[];
+let vinoRows=null, fournMap=null;
+let meta={vino:null,fourn:null};
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
-const K={vino:"vinom_u_vino",fourn:"vinom_u_fourn",cli:"vinom_u_cli",meta:"vinom_u_meta"};
+const K={v:'vinom2_vino',f:'vinom2_fourn',m:'vinom2_meta'};
 function sc(k,d){try{localStorage.setItem(k,JSON.stringify(d));return true;}catch(e){return false;}}
 function lc(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-window.addEventListener("load",()=>{
-  const m=lc(K.meta);if(m)meta=m;
-  const cv=lc(K.vino);if(cv)vinoRows=cv.map(r=>({...r,date:r.dateStr?new Date(r.dateStr):null}));
-  const cf=lc(K.fourn);if(cf)fournMap=new Map(cf);
-  const cc=lc(K.cli);if(cc)clientMap=cc;
+window.addEventListener('load',()=>{
+  const m=lc(K.m);if(m)meta=m;
+  const cv=lc(K.v);if(cv)vinoRows=cv.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
+  const cf=lc(K.f);if(cf)fournMap=new Map(cf);
   renderRef();chk();
 });
 
-// ── RENDER FICHIERS DE RÉFÉRENCE ──────────────────────────────────────────────
-function toggleFixed(){
-  const b=document.getElementById("ref-body"),c=document.getElementById("ref-chev");
-  b.classList.toggle("open");c.classList.toggle("open");
-}
-function renderRef(){
-  const all=vinoRows&&fournMap&&clientMap;
-  const tag=document.getElementById("ref-tag");
-  tag.textContent=all?"En cache ✓":"Non chargés";
-  tag.className=all?"tag-ok":"tag-ko";
-  const d=document.getElementById("ref-display");d.innerHTML="";
-  const items=[
-    {key:"vino",icon:"📊",label:"Extraction Vinistoria",data:vinoRows,metaKey:"vino",suffix:()=>`${vinoRows.length} lignes`},
-    {key:"fourn",icon:"🗂️",label:"Liste fournisseurs",data:fournMap,metaKey:"fourn",suffix:()=>`${fournMap.size} entrées`},
-    {key:"cli",icon:"👥",label:"Liste clients / agents",data:clientMap,metaKey:"cli",suffix:()=>`${Object.keys(clientMap).length} clients`},
-  ];
-  items.forEach(({icon,label,data,metaKey,suffix})=>{
-    if(data){
-      const m=meta[metaKey]||{};
-      d.innerHTML+=`<div class="cached-file">
-        <span class="cf-icon">${icon}</span>
-        <span class="cf-name">${m.name||label}</span>
-        <span class="cf-meta">${m.date||""} · ${suffix()}</span>
-        <button class="cf-btn" onclick="showUpdate()">Mettre à jour</button>
-      </div>`;
-    }
-  });
-  const missingCount=[vinoRows,fournMap,clientMap].filter(x=>!x).length;
-  document.getElementById("ref-first").style.display=missingCount>0?"block":"none";
-  document.getElementById("ref-update").style.display="none";
-  if(missingCount>0){document.getElementById("ref-body").classList.add("open");document.getElementById("ref-chev").classList.add("open");}
-}
-function showUpdate(){
-  document.getElementById("ref-update").style.display="block";
-  document.getElementById("ref-body").classList.add("open");
-  document.getElementById("ref-chev").classList.add("open");
-  setTimeout(()=>document.getElementById("ref-update").scrollIntoView({behavior:"smooth",block:"center"}),100);
-}
-
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function ss(m,c){const e=document.getElementById("status");e.textContent=m;e.className="status "+(c||"");}
-function sp(p){document.getElementById("pw").classList.toggle("vis",p>0&&p<100);document.getElementById("pb").style.width=p+"%";}
-function fmt(n){return n!=null?Number(n).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";}
-async function rb64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(f);});}
-async function rxlsx(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{try{res(XLSX.read(e.target.result,{type:"array",cellDates:true}));}catch(err){rej(err);}};r.readAsArrayBuffer(f);});}
+function ss(m,c){const e=document.getElementById('st');e.textContent=m;e.className='st '+(c||'');}
+function sp(p){document.getElementById('pw').classList.toggle('v',p>0&&p<100);document.getElementById('pb').style.width=p+'%';}
+function fmt(n){return n!=null?Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+async function rb64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+async function rxls(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{try{res(XLSX.read(e.target.result,{type:'array',cellDates:true}));}catch(err){rej(err);}};r.readAsArrayBuffer(f);});}
 function setupDZ(did,iid,fn){
   const z=document.getElementById(did);if(!z)return;
-  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("dragover")});
-  z.addEventListener("dragleave",()=>z.classList.remove("dragover"));
-  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("dragover");fn([...e.dataTransfer.files])});
-  document.getElementById(iid).addEventListener("change",e=>fn([...e.target.files]));
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover')});
+  z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');fn([...e.dataTransfer.files])});
+  document.getElementById(iid).addEventListener('change',e=>fn([...e.target.files]));
 }
-function renderList(cid,files,rmFn){
-  const el=document.getElementById(cid);if(!el)return;el.innerHTML="";
-  files.forEach((f,i)=>{const d=document.createElement("div");d.className="file-item";d.innerHTML=`<span>📄</span><span class="fi-name">${f.name}</span><span class="fi-rm" onclick="${rmFn}(${i})">✕</span>`;el.appendChild(d)});
+function renderFL(cid,files,rm){
+  const el=document.getElementById(cid);if(!el)return;el.innerHTML='';
+  files.forEach((f,i)=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<span>📄</span><span class="fi-nm">${f.name}</span><span class="fi-rm" onclick="${rm}(${i})">✕</span>`;el.appendChild(d)});
 }
 function chk(){
-  const ok=pdfFiles.length>0&&vinoRows&&fournMap&&clientMap;
-  document.getElementById("btn-gen").disabled=!ok;
-  if(ok)ss("Prêt — cliquez sur Générer.","");
-  else{const m=[];if(!pdfFiles.length)m.push("PDF");if(!vinoRows)m.push("Vinistoria");if(!fournMap)m.push("fournisseurs");if(!clientMap)m.push("clients/agents");ss("Manque : "+m.join(", ")+".");}
+  const ok=pdfs.length>0&&vinoRows&&fournMap;
+  document.getElementById('btn-g').disabled=!ok;
+  if(ok)ss('Prêt — cliquez sur Générer.','');
+  else{const m=[];if(!pdfs.length)m.push('PDF');if(!vinoRows)m.push('Vinistoria');if(!fournMap)m.push('fournisseurs');ss('Manque : '+m.join(', ')+'.');}
 }
 
-// ── CHARGEMENT FICHIERS FIXES ─────────────────────────────────────────────────
+// ── RENDER RÉFÉRENCE ──────────────────────────────────────────────────────────
+function toggleRef(){
+  const b=document.getElementById('ref-body'),c=document.getElementById('ref-chev');
+  b.classList.toggle('open');c.classList.toggle('open');
+}
+function renderRef(){
+  const all=vinoRows&&fournMap;
+  const tag=document.getElementById('ref-tag');
+  tag.textContent=all?'En cache ✓':'Non chargés';tag.className=all?'tag-ok':'tag-ko';
+  const d=document.getElementById('ref-disp');d.innerHTML='';
+  if(vinoRows){const m=meta.vino||{};d.innerHTML+=`<div class="cached-file"><span class="cf-ic">📊</span><span class="cf-nm">${m.name||'Extraction Vinistoria'}</span><span class="cf-mt">${m.date||''} · ${vinoRows.length} lignes</span><button class="cf-btn" onclick="showUpd()">Mettre à jour</button></div>`;}
+  if(fournMap){const m=meta.fourn||{};d.innerHTML+=`<div class="cached-file"><span class="cf-ic">🗂️</span><span class="cf-nm">${m.name||'Liste fournisseurs'}</span><span class="cf-mt">${m.date||''} · ${fournMap.size} entrées</span><button class="cf-btn" onclick="showUpd()">Mettre à jour</button></div>`;}
+  document.getElementById('ref-first').style.display=(!vinoRows||!fournMap)?'block':'none';
+  document.getElementById('ref-upd').style.display='none';
+  if(!all){document.getElementById('ref-body').classList.add('open');document.getElementById('ref-chev').classList.add('open');}
+}
+function showUpd(){
+  document.getElementById('ref-upd').style.display='block';
+  document.getElementById('ref-body').classList.add('open');document.getElementById('ref-chev').classList.add('open');
+  setTimeout(()=>document.getElementById('ref-upd').scrollIntoView({behavior:'smooth',block:'center'}),100);
+}
+
+// ── CHARGEMENT FICHIERS ────────────────────────────────────────────────────────
 async function loadVino(f){
-  const wb=await rxlsx(f);const ws=wb.Sheets[wb.SheetNames[0]];
+  ss('Chargement Vinistoria…','p');
+  const wb=await rxls(f);const ws=wb.Sheets[wb.SheetNames[0]];
   const data=XLSX.utils.sheet_to_json(ws,{header:1});
-  const h=data[0].map(x=>String(x||"").trim());
-  function fc(names){for(const n of names){const i=h.indexOf(n);if(i>=0)return i;}return -1;}
-  const iNop=fc(["N° Opération","N° Opration"]),iFc=fc(["Fourn/Dom"]),iN1=fc(["Nom 1"]),iRs=fc(["Rais. Soc."]),iMt=fc(["TOTAL HT (€)","TOTAL HT"]),iDt=fc(["Date Création","Date Creation"]);
+  const h=data[0].map(x=>String(x||'').trim());
+  function fc(ns){for(const n of ns){const i=h.indexOf(n);if(i>=0)return i;}return -1;}
+  const iNop=fc(['N° Opération','N° Opration']);
+  const iFc=fc(['Fourn/Dom']);
+  const iAg=fc(['S/Agent (Compta)']);
+  const iN1=fc(['Nom 1']);
+  const iRs=fc(['Rais. Soc.']);
+  const iMt=fc(['TOTAL HT (€)','TOTAL HT']);
+  const iDt=fc(['Date Création','Date Creation']);
   const rows=[];
   for(let i=1;i<data.length;i++){
-    const r=data[i];const nop=r[iNop];const fc2=parseInt(r[iFc]);if(!nop||isNaN(fc2))continue;
-    const n1=String(r[iN1]||"").toUpperCase().trim(),rs=String(r[iRs]||"").toUpperCase().trim();
-    let mt=r[iMt];if(typeof mt==="string")mt=parseFloat(mt.replace(/\s/g,"").replace(",","."));else mt=parseFloat(mt);
+    const r=data[i];
+    const nop=r[iNop];const fc2=parseInt(r[iFc]);
+    if(!nop||isNaN(fc2))continue;
+    const ag=String(r[iAg]||'').trim();
+    const n1=String(r[iN1]||'').toUpperCase().trim();
+    const rs=String(r[iRs]||'').toUpperCase().trim();
+    let mt=r[iMt];
+    if(typeof mt==='string')mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));else mt=parseFloat(mt);
     let date=r[iDt];
     if(date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
-    else if(typeof date==="string"){date=new Date(date);if(isNaN(date.getTime()))date=null;}
+    else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
     else date=null;
-    rows.push({nop:parseInt(nop),fc:fc2,n1,rs,mt:isNaN(mt)?null:mt,dateStr:date?date.toISOString():null});
+    rows.push({nop:parseInt(nop),fc:fc2,ag,n1,rs,mt:isNaN(mt)?null:mt,ds:date?date.toISOString():null});
   }
-  vinoRows=rows.map(r=>({...r,date:r.dateStr?new Date(r.dateStr):null}));
-  meta.vino={name:f.name,date:new Date().toLocaleDateString("fr-FR"),rows:rows.length};
-  sc(K.vino,rows);sc(K.meta,meta);
-  ss(`Vinistoria: ${rows.length} lignes`,"ok");renderRef();chk();
+  vinoRows=rows.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
+  meta.vino={name:f.name,date:new Date().toLocaleDateString('fr-FR'),rows:rows.length};
+  sc(K.v,rows);sc(K.m,meta);
+  ss(`Vinistoria: ${rows.length} lignes`,'ok');renderRef();chk();
 }
 async function loadFourn(f){
-  const wb=await rxlsx(f);const ws=wb.Sheets[wb.SheetNames[0]];
+  ss('Chargement fournisseurs…','p');
+  const wb=await rxls(f);const ws=wb.Sheets[wb.SheetNames[0]];
   const data=XLSX.utils.sheet_to_json(ws,{header:1});
-  const h=data[0].map(x=>String(x||"").trim());
-  const iC=h.indexOf("N° Fourn."),iN=h.indexOf("Nom 1");
-  if(iC<0||iN<0)throw new Error("Colonnes N° Fourn. ou Nom 1 introuvables");
+  const h=data[0].map(x=>String(x||'').trim());
+  const iC=h.indexOf('N° Fourn.'),iN=h.indexOf('Nom 1');
+  if(iC<0||iN<0)throw new Error('Colonnes N° Fourn. ou Nom 1 introuvables');
   const entries=[];
-  for(let i=1;i<data.length;i++){const code=parseInt(data[i][iC]);const nom=String(data[i][iN]||"").trim();if(!isNaN(code)&&nom)entries.push([code,nom]);}
-  fournMap=new Map(entries);
-  meta.fourn={name:f.name,date:new Date().toLocaleDateString("fr-FR"),count:entries.length};
-  sc(K.fourn,entries);sc(K.meta,meta);
-  ss(`Fournisseurs: ${entries.length} entrées`,"ok");renderRef();chk();
-}
-async function loadCli(f){
-  const wb=await rxlsx(f);const ws=wb.Sheets[wb.SheetNames[0]];
-  const data=XLSX.utils.sheet_to_json(ws,{header:1});
-  const map={};
   for(let i=1;i<data.length;i++){
-    const r=data[i];const ag=String(r[1]||"").trim();
-    const n1=String(r[3]||"").trim().toUpperCase(),rs=String(r[4]||"").trim().toUpperCase();
-    if(n1)map[n1]=ag;if(rs&&rs!==n1)map[rs]=ag;
+    const code=parseInt(data[i][iC]),nom=String(data[i][iN]||'').trim();
+    if(!isNaN(code)&&nom)entries.push([code,nom]);
   }
-  clientMap=map;
-  meta.cli={name:f.name,date:new Date().toLocaleDateString("fr-FR"),count:Object.keys(map).length};
-  sc(K.cli,map);sc(K.meta,meta);
-  ss(`Clients/agents: ${Object.keys(map).length} entrées`,"ok");renderRef();chk();
+  fournMap=new Map(entries);
+  meta.fourn={name:f.name,date:new Date().toLocaleDateString('fr-FR'),count:entries.length};
+  sc(K.f,entries);sc(K.m,meta);
+  ss(`Fournisseurs: ${entries.length} entrées`,'ok');renderRef();chk();
 }
 
-// ── DROP ZONES SETUP ──────────────────────────────────────────────────────────
-function rmPdf(i){pdfFiles.splice(i,1);renderList("lst-pdfs",pdfFiles,"rmPdf");document.getElementById("drop-pdfs").classList.toggle("has-files",pdfFiles.length>0);chk();}
-setupDZ("drop-pdfs","in-pdfs",files=>{pdfFiles=[...pdfFiles,...files.filter(f=>f.name.endsWith(".pdf"))];renderList("lst-pdfs",pdfFiles,"rmPdf");document.getElementById("drop-pdfs").classList.toggle("has-files",pdfFiles.length>0);chk();});
-["vino","fourn","cli"].forEach(key=>{
-  const loaders={vino:loadVino,fourn:loadFourn,cli:loadCli};
-  ["f","u"].forEach(sfx=>{
-    setupDZ(`drop-${key}-${sfx}`,`in-${key}-${sfx}`,async files=>{
-      if(!files[0])return;
-      renderList(`lst-${key}-${sfx}`,[files[0]],()=>{});
-      document.getElementById(`drop-${key}-${sfx}`).classList.add("has-files");
-      try{await loaders[key](files[0]);}catch(e){ss("Erreur: "+e.message,"error");}
-    });
+// ── DROP ZONES ────────────────────────────────────────────────────────────────
+function rmPdf(i){pdfs.splice(i,1);renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();}
+setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>f.name.endsWith('.pdf'))];renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();});
+['f','u'].forEach(sfx=>{
+  setupDZ(`dz-vino-${sfx}`,`in-vino-${sfx}`,async files=>{
+    if(!files[0])return;renderFL(`fl-vino-${sfx}`,[files[0]],()=>{});document.getElementById(`dz-vino-${sfx}`).classList.add('has-files');
+    try{await loadVino(files[0]);}catch(e){ss('Erreur Vinistoria: '+e.message,'err');}
+  });
+  setupDZ(`dz-fourn-${sfx}`,`in-fourn-${sfx}`,async files=>{
+    if(!files[0])return;renderFL(`fl-fourn-${sfx}`,[files[0]],()=>{});document.getElementById(`dz-fourn-${sfx}`).classList.add('has-files');
+    try{await loadFourn(files[0]);}catch(e){ss('Erreur fournisseurs: '+e.message,'err');}
   });
 });
 
 // ── NORMALISATION & SIMILARITÉ ────────────────────────────────────────────────
 function norm(s){
   return String(s).toUpperCase()
-    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,"")
-    .replace(/[^A-Z0-9 ]/g," ").replace(/\s+/g," ").trim();
+    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,'')
+    .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 }
 function sim(a,b){
   a=norm(a);b=norm(b);if(!a||!b)return 0;
@@ -427,61 +369,64 @@ function sim(a,b){
 }
 function cliSim(pdf,n1,rs){
   const a=norm(pdf),s1=sim(pdf,n1),s2=sim(pdf,rs);
-  const b3=(a.length>=4&&(norm(n1).includes(a)||a.includes(norm(n1))||norm(rs).includes(a)||a.includes(norm(rs))))?0.85:0;
-  return Math.max(s1,s2,b3);
-}
-function findAgent(name){
-  const k=name.toUpperCase().trim();
-  if(clientMap[k])return clientMap[k];
-  for(const[ck,v]of Object.entries(clientMap)){if(ck.length>=5&&(ck.includes(k.substring(0,8))||k.includes(ck.substring(0,8))))return v;}
-  return "⚠ non trouvé";
+  const c3=(a.length>=4&&(norm(n1).includes(a)||a.includes(norm(n1))||norm(rs).includes(a)||a.includes(norm(rs))))?0.85:0;
+  return Math.max(s1,s2,c3);
 }
 
-// Cache matching fournisseur
+// Cache fournisseur PDF → code Vinistoria
 const fcCache={};
-function getFournCode(fournPdf){
-  const k=norm(fournPdf);if(k in fcCache)return fcCache[k];
+function getFournCode(fPdf){
+  const k=norm(fPdf);if(k in fcCache)return fcCache[k];
   let best=null,bs=0;
-  for(const[code,nom]of fournMap){const s=sim(fournPdf,nom);if(s>bs){bs=s;best=code;}}
-  const r=bs>=0.30?best:null;fcCache[k]=r;return r;
+  for(const [code,nom] of fournMap){const s=sim(fPdf,nom);if(s>bs){bs=s;best=code;}}
+  const r=bs>=0.25?best:null;fcCache[k]=r;return r;
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
 function matchComm(fournisseur,client,dateStr,montantHt){
   const isAvoir=montantHt<0,amt=Math.abs(parseFloat(montantHt));
   let datePdf=null;
-  if(dateStr){const[d,m,y]=dateStr.split("/");datePdf=new Date(+y,+m-1,+d);if(isNaN(datePdf.getTime()))datePdf=null;}
+  if(dateStr){const p=dateStr.split('/');if(p.length===3)datePdf=new Date(+p[2],+p[1]-1,+p[0]);if(datePdf&&isNaN(datePdf.getTime()))datePdf=null;}
+
+  // FILTRE 1 — fournisseur par code exact
   const fc=getFournCode(fournisseur);
-  if(!fc)return{candidates:[],status:"FOURNISSEUR INCONNU"};
+  if(!fc)return{candidates:[],status:'FOURNISSEUR INCONNU'};
   let pool=vinoRows.filter(r=>r.fc===fc);
-  if(!pool.length)return{candidates:[],status:"FOURNISSEUR INCONNU"};
+  if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+
+  // FILTRE 2 — client par similarité ≥ 0.55
   pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.55);
-  if(!pool.length)return{candidates:[],status:"CLIENT NON TROUVÉ"};
+  if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
+
+  // FILTRE 3 — montant ±6%
   pool=pool.filter(r=>{
     if(r.mt===null)return false;
     const rv=isAvoir?Math.abs(r.mt):r.mt;
     return rv>0&&Math.abs(rv-amt)/amt<0.06;
   });
-  if(!pool.length)return{candidates:[],status:"MONTANT NON TROUVÉ"};
+  if(!pool.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
+
+  // FILTRE 4 — date: commande VINOM avant facture, fenêtre 0–30j normale, élargie avec warning
   let dWarn=false;
   if(datePdf){
     pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/86400000):null}));
-    const norm2=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=10);
+    const norm2=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=30);
     if(norm2.length>0)pool=norm2;
-    else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=90);pool=ext.length>0?ext:pool;dWarn=true;}
+    else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=120);pool=ext.length>0?ext:pool;dWarn=true;}
   }else pool=pool.map(r=>({...r,gap:null}));
+
   pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
   const cands=pool.slice(0,4),n=cands.length;
   let status;
-  if(n===1&&!dWarn)status="✓ MATCH UNIQUE";
-  else if(n===1&&dWarn)status="⚠ MATCH UNIQUE — ÉCART DATE";
+  if(n===1&&!dWarn)status='✓ MATCH UNIQUE';
+  else if(n===1&&dWarn)status='⚠ MATCH UNIQUE — ÉCART DATE';
   else if(dWarn)status=`⚠ MULTI-CANDIDATS (${n}) — ÉCART DATE`;
   else status=`MULTI-CANDIDATS (${n})`;
-  if(isAvoir&&status.includes("✓"))status=status.replace("✓","✓ (avoir)");
+  if(isAvoir&&status.includes('✓'))status=status.replace('✓','✓ (avoir)');
   return{candidates:cands,status};
 }
 
-// ── EXTRACTION PDF ────────────────────────────────────────────────────────────
+// ── EXTRACTION PDF ─────────────────────────────────────────────────────────────
 async function extractPdf(b64,fn){
   const prompt=`Fichier: ${fn}. Extrais TOUTES les lignes de commissions. Retourne UNIQUEMENT un JSON valide (aucun markdown, aucun texte autour):
 [{"fournisseur":"nom complet du fournisseur émetteur","client":"nom du client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"statut_paiement":"PAYEE ou NON PAYEE"}]
@@ -493,131 +438,130 @@ Règles strictes:
 - taux = nombre entier (15 pour 15%).
 - Dans les valeurs string, remplacer les apostrophes par un espace.
 - UNIQUEMENT le JSON.`;
-  const r=await fetch("/.netlify/functions/proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},{type:"text",text:prompt}]}]})});
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
-  const t=d.content.filter(b=>b.type==="text").map(b=>b.text).join("");
-  let clean=t.replace(/```json|```/g,"").trim();
+  const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  let clean=t.replace(/```json|```/g,'').trim();
   try{return JSON.parse(clean);}
   catch(e1){
-    clean=clean.replace(/"([^"]*)"/g,(m,p)=>'"'+p.replace(/'/g,"\u0027")+'"');
+    clean=clean.replace(/"([^"]*)"/g,(m,p)=>'"'+p.replace(/'/g,'\u0027')+'"');
     try{return JSON.parse(clean);}
-    catch(e2){throw new Error("JSON invalide — "+e2.message);}
+    catch(e2){throw new Error('JSON invalide: '+e2.message);}
   }
 }
 
-// ── RUN ───────────────────────────────────────────────────────────────────────
+// ── RUN ────────────────────────────────────────────────────────────────────────
 async function run(){
-  const btn=document.getElementById("btn-gen");
-  btn.disabled=true;btn.innerHTML="<span class=\"spinner\"></span> Traitement…";
-  document.getElementById("results").classList.remove("vis");
-  document.getElementById("warns-area").innerHTML="";sp(5);
-  const q=document.getElementById("sel-q").value,y=document.getElementById("inp-y").value;
+  const btn=document.getElementById('btn-g');
+  btn.disabled=true;btn.innerHTML='<span class="sp"></span> Traitement…';
+  document.getElementById('res').classList.remove('v');
+  document.getElementById('wa').innerHTML='';sp(5);
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   Object.keys(fcCache).forEach(k=>delete fcCache[k]);
   try{
     const allComms=[],warns=[];
-    for(let i=0;i<pdfFiles.length;i++){
-      const f=pdfFiles[i];ss(`Extraction ${i+1}/${pdfFiles.length}: ${f.name}`,"processing");sp(10+Math.round(i/pdfFiles.length*60));
+    for(let i=0;i<pdfs.length;i++){
+      const f=pdfs[i];ss(`Extraction ${i+1}/${pdfs.length}: ${f.name}`,'p');sp(10+Math.round(i/pdfs.length*60));
       try{const b=await rb64(f);const cx=await extractPdf(b,f.name);cx.forEach(c=>allComms.push({...c,_src:f.name}));}
       catch(e){warns.push(`${f.name}: ${e.message}`);}
     }
-    sp(75);ss("Rapprochement en cours…","processing");
-    const resultRows=[],stats={"✓":0,"⚠":0,"MULTI":0,"AUCUN":0};
+    sp(75);ss('Rapprochement…','p');
+    const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
     allComms.forEach(comm=>{
-      const agent=findAgent(comm.client);
-      if(agent==="⚠ non trouvé")warns.push(`Agent non trouvé: "${comm.client}"`);
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht);
-      if(status.includes("✓"))stats["✓"]++;
-      else if(status.includes("⚠"))stats["⚠"]++;
-      else if(status.includes("MULTI"))stats["MULTI"]++;
-      else stats["AUCUN"]++;
+      // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
+      const agent=candidates.length>0?(candidates[0].ag||'—'):'—';
+      if(status.includes('✓'))stats['✓']++;
+      else if(status.includes('⚠'))stats['⚠']++;
+      else if(status.includes('MULTI'))stats['MULTI']++;
+      else stats['AUCUN']++;
       resultRows.push({comm:{...comm,agent},candidates,status});
     });
-    sp(90);lastRows=resultRows;
-    renderTable(resultRows,q,y);renderStats(stats);
-    if(warns.length){const box=document.createElement("div");box.style.cssText="margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px";box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join("")}</ul>`;document.getElementById("warns-area").appendChild(box);}
+    sp(90);lastRows=resultRows;renderTable(resultRows,q,y);renderStats(stats);
+    if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('wa').appendChild(box);}
     sp(100);setTimeout(()=>sp(0),600);
-    ss(`✓ ${allComms.length} lignes traitées — ${q} ${y}`,"ok");
-    document.getElementById("results").classList.add("vis");
-    document.getElementById("period-label").textContent=`${q} ${y}`;
-    document.getElementById("rmeta").textContent=`${allComms.length} lignes · ${new Date().toLocaleDateString("fr-FR")}`;
-  }catch(e){ss("Erreur: "+e.message,"error");sp(0);}
-  btn.disabled=false;btn.innerHTML="<span>⚡</span> Générer";
+    ss(`✓ ${allComms.length} lignes traitées — ${q} ${y}`,'ok');
+    document.getElementById('res').classList.add('v');
+    document.getElementById('plbl').textContent=`${q} ${y}`;
+    document.getElementById('rm').textContent=`${allComms.length} lignes · ${new Date().toLocaleDateString('fr-FR')}`;
+  }catch(e){ss('Erreur: '+e.message,'err');sp(0);}
+  btn.disabled=false;btn.innerHTML='<span>⚡</span> Générer';
 }
 
-// ── RENDER TABLE ──────────────────────────────────────────────────────────────
-const CL=["#6B1A2A","#C9973A","#2E7D4F","#1A478A","#7B3FA0","#B05C00"];
+// ── RENDER TABLE ───────────────────────────────────────────────────────────────
+const CL=['#6B1A2A','#C9973A','#2E7D4F','#1A478A','#7B3FA0','#B05C00'];
 const CM={};let CI=0;
 function gc(n){if(!CM[n])CM[n]=CL[CI++%CL.length];return CM[n];}
 
 function renderTable(rows,q,y){
-  const tbody=document.getElementById("rtbody"),tfoot=document.getElementById("rtfoot");
-  tbody.innerHTML="";tfoot.innerHTML="";let tHT=0,tCom=0;
+  const tbody=document.getElementById('tb'),tfoot=document.getElementById('tf');
+  tbody.innerHTML='';tfoot.innerHTML='';let tHT=0,tCom=0;
   rows.forEach(({comm,candidates,status})=>{
     const isAvoir=comm.montant_ht<0;
-    const isPaid=comm.statut_paiement&&!comm.statut_paiement.includes("NON");
+    const isPaid=comm.statut_paiement&&!comm.statut_paiement.includes('NON');
     let bg,pc;
-    if(status.includes("AUCUN")||status.includes("NON TROUVÉ")||status.includes("INCONNU")){bg="var(--fill-err)";pc="pill-err";}
-    else if(status.includes("⚠")){bg="var(--fill-warn)";pc="pill-warn";}
-    else if(status.includes("MULTI")){bg="var(--fill-multi)";pc="pill-multi";}
-    else{bg="var(--fill-ok)";pc="pill-ok";}
+    if(status.includes('AUCUN')||status.includes('NON TROUVÉ')||status.includes('INCONNU')){bg='var(--fill-err)';pc='p-err';}
+    else if(status.includes('⚠')){bg='var(--fill-warn)';pc='p-warn';}
+    else if(status.includes('MULTI')){bg='var(--fill-multi)';pc='p-multi';}
+    else{bg='var(--fill-ok)';pc='p-ok';}
     const c=candidates[0]||{};const col=gc(comm.fournisseur);
-    const tr=document.createElement("tr");tr.style.background=bg;
+    const tr=document.createElement('tr');tr.style.background=bg;
     tr.innerHTML=`
-      <td><span class="fb" style="background:${col}20;color:${col};border:1px solid ${col}40">${comm.fournisseur||"—"}</span></td>
-      <td>${comm.client||"—"}</td>
-      <td class="mono">${comm.agent||"—"}</td>
-      <td class="ctr">${comm.date||"—"}</td>
-      <td class="mono">${comm.n_piece||"—"}</td>
-      <td class="num"${isAvoir?" style=\"color:var(--err)\"":""}>${fmt(comm.montant_ht)} €</td>
-      <td class="ctr">${comm.taux}%</td>
-      <td class="num">${fmt(comm.commission_ht)} €</td>
-      <td class="ctr"><span class="${isPaid?"pill-pay":"pill-nopay"} status-pill">${comm.statut_paiement||"—"}</span></td>
-      <td class="mono" style="font-weight:700">${c.nop||"—"}</td>
-      <td class="ctr">${c.date?c.date.toLocaleDateString("fr-FR"):"—"}</td>
-      <td class="num">${fmt(c.mt)}</td>
-      <td class="ctr">${c.gap!=null?c.gap+"j":"—"}</td>
-      <td><span class="status-pill ${pc}">${status}</span></td>`;
+      <td><span class="fb" style="background:${col}20;color:${col};border:1px solid ${col}40">${comm.fournisseur||'—'}</span></td>
+      <td>${comm.client||'—'}</td>
+      <td class="mo">${comm.agent||'—'}</td>
+      <td class="ct">${comm.date||'—'}</td>
+      <td class="mo">${comm.n_piece||'—'}</td>
+      <td class="nu"${isAvoir?' style="color:var(--err)"':''}>${fmt(comm.montant_ht)} €</td>
+      <td class="ct">${comm.taux}%</td>
+      <td class="nu">${fmt(comm.commission_ht)} €</td>
+      <td class="ct"><span class="pill ${isPaid?'p-pay':'p-nopay'}">${comm.statut_paiement||'—'}</span></td>
+      <td class="mo" style="font-weight:700">${c.nop||'—'}</td>
+      <td class="ct">${c.date?c.date.toLocaleDateString('fr-FR'):'—'}</td>
+      <td class="nu">${fmt(c.mt)}</td>
+      <td class="ct">${c.gap!=null?c.gap+'j':'—'}</td>
+      <td><span class="pill ${pc}">${status}</span></td>`;
     tbody.appendChild(tr);tHT+=comm.montant_ht||0;tCom+=comm.commission_ht||0;
     candidates.slice(1).forEach((cc,ci)=>{
-      const tr2=document.createElement("tr");tr2.className="cand-row";
-      tr2.innerHTML=`<td colspan="9"></td><td class="mono" style="color:#aaa;font-style:italic">↳ candidat ${ci+2}: ${cc.nop||"—"}</td><td class="ctr">${cc.date?cc.date.toLocaleDateString("fr-FR"):"—"}</td><td class="num">${fmt(cc.mt)}</td><td class="ctr">${cc.gap!=null?cc.gap+"j":"—"}</td><td></td>`;
+      const tr2=document.createElement('tr');tr2.className='cand';
+      tr2.innerHTML=`<td colspan="9"></td><td class="mo" style="color:#aaa;font-style:italic">↳ candidat ${ci+2}: ${cc.nop||'—'}</td><td class="ct">${cc.date?cc.date.toLocaleDateString('fr-FR'):'—'}</td><td class="nu">${fmt(cc.mt)}</td><td class="ct">${cc.gap!=null?cc.gap+'j':'—'}</td><td></td>`;
       tbody.appendChild(tr2);
     });
   });
-  const tf=document.createElement("tr");
-  tf.innerHTML=`<td colspan="5" style="text-align:right;padding-right:10px">TOTAL ${q} ${y}</td><td class="num">${fmt(tHT)} €</td><td></td><td class="num" style="color:var(--ok)">${fmt(tCom)} €</td><td colspan="6"></td>`;
+  const tf=document.createElement('tr');
+  tf.innerHTML=`<td colspan="5" style="text-align:right;padding-right:10px">TOTAL ${q} ${y}</td><td class="nu">${fmt(tHT)} €</td><td></td><td class="nu" style="color:var(--ok)">${fmt(tCom)} €</td><td colspan="6"></td>`;
   tfoot.appendChild(tf);
 }
 function renderStats(s){
-  const el=document.getElementById("stats-row");el.innerHTML="";
-  [{n:s["✓"],l:"Match exact",c:"var(--ok)"},{n:s["⚠"],l:"Écart date",c:"var(--warn)"},{n:s["MULTI"],l:"Multi-candidats",c:"var(--multi)"},{n:s["AUCUN"],l:"Non trouvé",c:"var(--err)"}]
-  .forEach(({n,l,c})=>{const d=document.createElement("div");d.className="stat-box";d.innerHTML=`<div class="stat-n" style="color:${c}">${n}</div><div class="stat-l">${l}</div>`;el.appendChild(d);});
+  const el=document.getElementById('sr');el.innerHTML='';
+  [{n:s['✓'],l:'Match exact',c:'var(--ok)'},{n:s['⚠'],l:'Écart date',c:'var(--warn)'},{n:s['MULTI'],l:'Multi-candidats',c:'var(--multi)'},{n:s['AUCUN'],l:'Non trouvé',c:'var(--err)'}]
+  .forEach(({n,l,c})=>{const d=document.createElement('div');d.className='sb';d.innerHTML=`<div class="sn" style="color:${c}">${n}</div><div class="sl">${l}</div>`;el.appendChild(d);});
 }
 
-// ── EXPORTS ───────────────────────────────────────────────────────────────────
+// ── EXPORTS ────────────────────────────────────────────────────────────────────
 function dlCSV(){
-  const q=document.getElementById("sel-q").value,y=document.getElementById("inp-y").value;
-  const h=["Fournisseur","Client","Agent","Date facture","N° Pièce","Montant HT","Taux","Commission HT","Paiement","N° Op VINOM","Date commande","Montant VINOM","Écart (j)","Statut rapprochement"];
-  const lines=[h.join(";")];
-  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace(".",","),comm.taux,String(comm.commission_ht).replace(".",","),comm.statut_paiement||"",c.nop||"",c.date?c.date.toLocaleDateString("fr-FR"):"",String(c.mt||"").replace(".",","),c.gap!=null?c.gap:"",status].join(";"));});
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download=`Commissions_${q}${y}_VINOM.csv`;a.click();
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
+  const lines=[h.join(';')];
+  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.mt||'').replace('.',','),c.gap!=null?c.gap:'',status].join(';'));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Commissions_${q}${y}_VINOM.csv`;a.click();
 }
 function dlXLSX(){
-  const q=document.getElementById("sel-q").value,y=document.getElementById("inp-y").value;
+  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const wb=XLSX.utils.book_new();
-  const h=["Fournisseur","Client","Agent","Date facture","N° Pièce","Montant HT (€)","Taux (%)","Commission HT (€)","Statut paiement","N° Op. VINOM","Date commande VINOM","Montant VINOM (€)","Écart (j)","Statut rapprochement"];
+  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)','Statut paiement','N° Op. VINOM','Date commande VINOM','Montant VINOM (€)','Écart (j)','Statut rapprochement'];
   const data=[];
   lastRows.forEach(({comm,candidates,status})=>{
     const c=candidates[0]||{};
-    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||"",c.nop||"",c.date?c.date.toLocaleDateString("fr-FR"):"",c.mt||"",c.gap!=null?c.gap:"",status]);
-    candidates.slice(1).forEach((cc,ci)=>data.push(["","","","","","","","","",cc.nop||"",cc.date?cc.date.toLocaleDateString("fr-FR"):"",cc.mt||"",cc.gap!=null?cc.gap:"",`↳ candidat ${ci+2}`]));
+    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.mt||'',c.gap!=null?c.gap:'',status]);
+    candidates.slice(1).forEach((cc,ci)=>data.push(['','','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.mt||'',cc.gap!=null?cc.gap:'',`↳ candidat ${ci+2}`]));
   });
   const tHT=lastRows.reduce((s,{comm})=>s+(comm.montant_ht||0),0);
   const tCom=lastRows.reduce((s,{comm})=>s+(comm.commission_ht||0),0);
-  data.push(["","","","",`TOTAL ${q} ${y}`,tHT,"",tCom,"","","","","",""]);
+  data.push(['','','','',`TOTAL ${q} ${y}`,tHT,'',tCom,'','','','','','']);
   const ws=XLSX.utils.aoa_to_sheet([h,...data]);
-  ws["!cols"]=[22,22,16,12,14,12,7,14,10,16,16,12,8,26].map(w=>({wch:w}));
+  ws['!cols']=[22,22,12,12,14,12,7,14,10,16,16,12,8,26].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws,`Commissions ${q} ${y}`);
   XLSX.writeFile(wb,`Commissions_${q}${y}_VINOM.xlsx`);
 }
