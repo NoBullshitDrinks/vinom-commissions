@@ -448,11 +448,7 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   let pool=vinoRows.filter(r=>r.fc===fc);
   if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
 
-  // FILTRE 2 — client par similarité ≥ 0.55
-  pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.45);
-  if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
-
-  // FILTRE 3 — montant ±6%, fallback ±20% avec warning
+  // FILTRE 2 — montant ±6%, fallback ±20%, fallback date-only
   let mtWarn=false;
   let poolMt=pool.filter(r=>{
     if(r.mt===null)return false;
@@ -460,7 +456,6 @@ function matchComm(fournisseur,client,dateStr,montantHt){
     return rv>0&&Math.abs(rv-amt)/amt<0.06;
   });
   if(!poolMt.length){
-    // Fallback montant ±20%
     poolMt=pool.filter(r=>{
       if(r.mt===null)return false;
       const rv=isAvoir?Math.abs(r.mt):r.mt;
@@ -468,8 +463,17 @@ function matchComm(fournisseur,client,dateStr,montantHt){
     });
     if(poolMt.length)mtWarn=true;
   }
+  if(!poolMt.length){poolMt=pool.slice();mtWarn=true;}
   if(!poolMt.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
   pool=poolMt;
+
+  // FILTRE 3 — client par similarité (après montant, pour éviter faux positifs)
+  // Seuil haut 0.75 sur pool déjà filtré fournisseur+montant
+  const poolCli=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.75);
+  if(poolCli.length>0)pool=poolCli;
+  // Si aucun client ne passe le seuil haut, garder le pool montant mais signaler
+  // (le client sera affiché mais avec un score faible visible)
+  else pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)}));
 
   // FILTRE 4 — date: commande VINOM avant facture, fenêtre 0–30j normale, élargie avec warning
   let dWarn=false;
