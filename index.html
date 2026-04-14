@@ -488,7 +488,17 @@ function matchComm(fournisseur,client,dateStr,montantHt){
     }
   }else pool=pool.map(r=>({...r,gap:null}));
 
-  pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
+  // Tri composite : 1) score client décroissant (priorité absolue si écart ≥ 0.15)
+  //                 2) gap croissant à score client équivalent
+  pool=pool.sort((a,b)=>{
+    const sa=a.score??0, sb=b.score??0;
+    const ga=Math.abs(a.gap??9999), gb=Math.abs(b.gap??9999);
+    // Si l'un a un score client nettement supérieur (≥0.15 d'écart), il passe devant
+    if(sa-sb>=0.15)return -1;
+    if(sb-sa>=0.15)return 1;
+    // Scores proches → départager par gap
+    return ga-gb;
+  });
   // Si le meilleur candidat a un gap nettement plus court (≤10j d'écart avec le suivant),
   // le retenir seul pour éviter les faux multi-candidats sur clients récurrents
   let finalPool=pool;
