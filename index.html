@@ -232,10 +232,31 @@ let meta={vino:null,fourn:null};
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
 const K={v:'vinom3_vino',f:'vinom3_fourn',m:'vinom3_meta'};
-function sc(k,d){try{localStorage.setItem(k,JSON.stringify(d));return true;}catch(e){return false;}}
+function sc(k,d){
+  try{
+    const s=JSON.stringify(d);
+    localStorage.setItem(k,s);
+    return true;
+  }catch(e){
+    console.warn('Cache echec ('+k+'):', e.message);
+    // Tenter de vider d'autres clés et réessayer
+    try{
+      Object.keys(localStorage).filter(k2=>k2.startsWith('vinom')).forEach(k2=>localStorage.removeItem(k2));
+      localStorage.setItem(k,JSON.stringify(d));
+      return true;
+    }catch(e2){return false;}
+  }
+}
 function lc(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 
 window.addEventListener('load',()=>{
+  // Nettoyer les anciennes versions du cache pour libérer de l'espace
+  ['vinom_u_vino','vinom_u_fourn','vinom_u_cli','vinom_u_meta',
+   'vinom2_vino','vinom2_fourn','vinom2_meta',
+   'vinom_clients_map','vinom_clients_meta',
+   'vinom_vino_data','vinom_fourn_data','vinom_cache_meta'].forEach(k=>{
+    try{localStorage.removeItem(k);}catch(e){}
+  });
   const m=lc(K.m);if(m)meta=m;
   const cv=lc(K.v);if(cv)vinoRows=cv.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
   const cf=lc(K.f);if(cf)fournMap=new Map(cf);
@@ -320,8 +341,10 @@ async function loadVino(f){
   }
   vinoRows=rows.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
   meta.vino={name:f.name,date:new Date().toLocaleDateString('fr-FR'),rows:rows.length};
-  sc(K.v,rows);sc(K.m,meta);
-  ss(`Vinistoria: ${rows.length} lignes`,'ok');renderRef();chk();
+  const saved=sc(K.v,rows);sc(K.m,meta);
+  if(!saved)ss(`Vinistoria: ${rows.length} lignes (cache non disponible — rechargez à chaque session)`,'ok');
+  else ss(`Vinistoria: ${rows.length} lignes en cache`,'ok');
+  renderRef();chk();
 }
 async function loadFourn(f){
   ss('Chargement fournisseurs…','p');
@@ -428,35 +451,27 @@ function matchComm(fournisseur,client,dateStr,montantHt){
 
 // ── EXTRACTION PDF ─────────────────────────────────────────────────────────────
 async function extractPdf(b64,fn){
-  const prompt=`Fichier: ${fn}.
+  const prompt=`Tu reçois le texte d'un relevé de commissions fournisseur (extrait avec mise en page préservée).
 
-Ce document est un relevé de commissions fournisseur. Extrais TOUTES les lignes de commissions.
+Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide:
+[{"fournisseur":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15,"commission_ht":18.52,"statut_paiement":"PAYEE ou NON PAYEE"}]
 
-Structure possible des lignes selon le format:
-- Format A (ex: LEDA, Badet, Aghione): chaque ligne contient un N° de commande fournisseur, un N° de facture, une date, un nom de client, un montant HT facture, une base commissonnable, un montant de commission.
-- Format B (ex: Patrick Font, ViniBegood): chaque ligne contient un nom de client, un N° de facture, un montant HT, un taux %, un montant commission.
-- Format C (ex: Gautheron): tableau avec colonnes DATE / CLIENT / FACTURE / € HT / COMM % / MONTANT COMM / REG CLIENT.
-
-Pour chaque ligne extraite:
-- fournisseur = nom de l'entreprise émettrice en haut du document (ex: "MAISON LEDA", "SAS ATELIER PATRICK FONT", "DOMAINE GAUTHERON")
-- client = nom exact du client tel qu'il apparaît (ex: "REST LA MARINE", "JAM / BAR BOUILLE", "CHEZ FRED")
-- date = date de la facture au format DD/MM/YYYY
-- n_piece = numéro de la facture (ex: "FVE26030064", "FA83557", "25260189")
-- montant_ht = base commissonnable (float) — c'est la base de calcul de la commission, pas le total TTC
-- taux = arrondi entier de (commission_ht / montant_ht * 100) si non affiché, sinon taux affiché
-- commission_ht = montant commission HT (float), 0 si non payée ou absente
-- statut_paiement = "PAYEE" si commission_ht > 0 et réglée, sinon "NON PAYEE"
-
-Retourne UNIQUEMENT un JSON valide (aucun markdown, aucun texte autour):
-[{"fournisseur":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
+Règles d'extraction:
+- fournisseur: nom de l'entreprise émettrice (en haut du document, ex: "DOMAINE GAUTHERON", "MAISON LEDA", "SAS ATELIER PATRICK FONT")
+- client: nom exact du client sur chaque ligne
+- date: date de la facture convertie en DD/MM/YYYY. ATTENTION — les dates peuvent être au format américain M/D/YYYY (ex: 9/1/2025 = 1er septembre 2025 = 01/09/2025, 10/31/2025 = 31 octobre 2025 = 31/10/2025)
+- n_piece: numéro de facture (ex: "25260189", "FVE26030064", "FA83557")
+- montant_ht: base commissonnable en float (colonne "€ HT" ou "Base commissionable", PAS le total TTC)
+- taux: pourcentage entier (si non affiché: round(commission_ht/montant_ht*100))
+- commission_ht: montant commission en float, 0 si NON PAYEE
+- statut_paiement: "PAYEE" ou "NON PAYEE"
 
 Règles strictes:
-- montant_ht et commission_ht sont TOUJOURS des nombres (float).
-- Inclure TOUTES les lignes y compris celles non payées (commission_ht=0).
-- Inclure les avoirs (montants négatifs).
-- Exclure uniquement les lignes de total général.
-- Dans les valeurs string, remplacer les apostrophes par un espace.
-- Si un même N° de facture a plusieurs lignes produit, regrouper en une seule ligne (somme des montants).
+- montant_ht et commission_ht sont TOUJOURS des nombres (jamais du texte).
+- Inclure TOUTES les lignes y compris non payées.
+- Exclure les lignes de total/sous-total.
+- Remplacer les apostrophes dans les noms par un espace.
+- Si même N° facture sur plusieurs lignes produit: regrouper en une ligne (somme des montants).
 - UNIQUEMENT le JSON, rien d'autre.`;
   const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
