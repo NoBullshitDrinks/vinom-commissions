@@ -366,7 +366,7 @@ async function loadFourn(f){
 
 // ── DROP ZONES ────────────────────────────────────────────────────────────────
 function rmPdf(i){pdfs.splice(i,1);renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();}
-setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>f.name.endsWith('.pdf'))];renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();});
+setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>f.name.toLowerCase().endsWith('.pdf'))];renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();});
 ['f','u'].forEach(sfx=>{
   setupDZ(`dz-vino-${sfx}`,`in-vino-${sfx}`,async files=>{
     if(!files[0])return;renderFL(`fl-vino-${sfx}`,[files[0]],()=>{});document.getElementById(`dz-vino-${sfx}`).classList.add('has-files');
@@ -473,8 +473,16 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   }else pool=pool.map(r=>({...r,gap:null}));
 
   pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
-  // Ne garder que les 4 meilleurs candidats DANS la fenêtre retenue
-  const cands=pool.slice(0,4),n=cands.length;
+  // Si le meilleur candidat a un gap nettement plus court (≤10j d'écart avec le suivant),
+  // le retenir seul pour éviter les faux multi-candidats sur clients récurrents
+  let finalPool=pool;
+  if(pool.length>1&&pool[0].gap!=null){
+    const bestGap=Math.abs(pool[0].gap??9999);
+    const secondGap=Math.abs(pool[1].gap??9999);
+    if(bestGap<=5&&secondGap-bestGap>=7) finalPool=pool.slice(0,1);
+    else if(bestGap===0&&secondGap>0) finalPool=pool.slice(0,1);
+  }
+  const cands=finalPool.slice(0,4),n=cands.length;
   let status;
   if(n===1&&!dWarn&&!mtWarn)status='✓ MATCH UNIQUE';
   else if(n===1&&dWarn&&!mtWarn)status='⚠ MATCH UNIQUE — ÉCART DATE';
