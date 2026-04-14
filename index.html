@@ -386,10 +386,22 @@ function norm(s){
     .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 }
 function sim(a,b){
-  a=norm(a);b=norm(b);if(!a||!b)return 0;
-  const la=a.length,lb=b.length;let c=0;const u=new Array(lb).fill(false);
-  for(let i=0;i<la;i++)for(let j=0;j<lb;j++)if(!u[j]&&a[i]===b[j]){c++;u[j]=true;break;}
-  return(2*c)/(la+lb);
+  const na=norm(a),nb=norm(b);if(!na||!nb)return 0;
+  // Similarité par mots (Jaccard) - prioritaire pour les noms de fournisseurs
+  const wa=new Set(na.split(' ').filter(w=>w.length>1));
+  const wb=new Set(nb.split(' ').filter(w=>w.length>1));
+  const inter=[...wa].filter(w=>wb.has(w)).length;
+  const union=new Set([...wa,...wb]).size;
+  const wordSim=union>0?inter/union:0;
+  // Similarité par caractères (séquence)
+  const la=na.length,lb=nb.length;let c=0;const u=new Array(lb).fill(false);
+  for(let i=0;i<la;i++)for(let j=0;j<lb;j++)if(!u[j]&&na[i]===nb[j]){c++;u[j]=true;break;}
+  const charSim=(2*c)/(la+lb);
+  // Score final: max des deux, avec bonus si les deux sont élevés
+  // Bonus containment: si l'un contient l'autre comme sous-séquence de mots
+  const containA=na.includes(nb)||nb.includes(na);
+  const bonus=containA?0.15:0;
+  return Math.min(1, Math.max(wordSim, charSim) + bonus);
 }
 function cliSim(pdf,n1,rs){
   const a=norm(pdf),s1=sim(pdf,n1),s2=sim(pdf,rs);
@@ -467,7 +479,7 @@ function matchComm(fournisseur,client,dateStr,montantHt){
     if(norm2.length>0){
       pool=norm2; // IMPORTANT: on prend SEULEMENT la fenêtre normale
     } else{
-      const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=120);
+      const ext=pool.filter(r=>r.gap!==null&&r.gap>=-10&&r.gap<=180);
       pool=ext.length>0?ext:pool;dWarn=true;
     }
   }else pool=pool.map(r=>({...r,gap:null}));
