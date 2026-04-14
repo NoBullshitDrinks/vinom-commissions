@@ -428,17 +428,36 @@ function matchComm(fournisseur,client,dateStr,montantHt){
 
 // ── EXTRACTION PDF ─────────────────────────────────────────────────────────────
 async function extractPdf(b64,fn){
-  const prompt=`Fichier: ${fn}. Extrais TOUTES les lignes de commissions. Retourne UNIQUEMENT un JSON valide (aucun markdown, aucun texte autour):
-[{"fournisseur":"nom complet du fournisseur émetteur","client":"nom du client","date":"DD/MM/YYYY","n_piece":"numéro pièce/facture","montant_ht":123.45,"taux":10,"commission_ht":12.35,"statut_paiement":"PAYEE ou NON PAYEE"}]
+  const prompt=`Fichier: ${fn}.
+
+Ce document est un relevé de commissions fournisseur. Extrais TOUTES les lignes de commissions.
+
+Structure possible des lignes selon le format:
+- Format A (ex: LEDA, Badet, Aghione): chaque ligne contient un N° de commande fournisseur, un N° de facture, une date, un nom de client, un montant HT facture, une base commissonnable, un montant de commission.
+- Format B (ex: Patrick Font, ViniBegood): chaque ligne contient un nom de client, un N° de facture, un montant HT, un taux %, un montant commission.
+- Format C (ex: Gautheron): tableau avec colonnes DATE / CLIENT / FACTURE / € HT / COMM % / MONTANT COMM / REG CLIENT.
+
+Pour chaque ligne extraite:
+- fournisseur = nom de l'entreprise émettrice en haut du document (ex: "MAISON LEDA", "SAS ATELIER PATRICK FONT", "DOMAINE GAUTHERON")
+- client = nom exact du client tel qu'il apparaît (ex: "REST LA MARINE", "JAM / BAR BOUILLE", "CHEZ FRED")
+- date = date de la facture au format DD/MM/YYYY
+- n_piece = numéro de la facture (ex: "FVE26030064", "FA83557", "25260189")
+- montant_ht = base commissonnable (float) — c'est la base de calcul de la commission, pas le total TTC
+- taux = arrondi entier de (commission_ht / montant_ht * 100) si non affiché, sinon taux affiché
+- commission_ht = montant commission HT (float), 0 si non payée ou absente
+- statut_paiement = "PAYEE" si commission_ht > 0 et réglée, sinon "NON PAYEE"
+
+Retourne UNIQUEMENT un JSON valide (aucun markdown, aucun texte autour):
+[{"fournisseur":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
+
 Règles strictes:
-- montant_ht et commission_ht sont TOUJOURS des nombres (float). Si commission absente ou NON PAYEE: commission_ht=0.
-- Inclure TOUTES les lignes y compris non payées.
+- montant_ht et commission_ht sont TOUJOURS des nombres (float).
+- Inclure TOUTES les lignes y compris celles non payées (commission_ht=0).
 - Inclure les avoirs (montants négatifs).
-- Exclure uniquement les lignes où montant_ht=0 ET commission_ht=0.
-- taux = nombre entier (15 pour 15%).
+- Exclure uniquement les lignes de total général.
 - Dans les valeurs string, remplacer les apostrophes par un espace.
-- Si un même numéro de pièce/facture apparaît sur plusieurs lignes produit, les regrouper en UNE SEULE ligne avec le montant HT total et la commission HT totale.
-- UNIQUEMENT le JSON.`;
+- Si un même N° de facture a plusieurs lignes produit, regrouper en une seule ligne (somme des montants).
+- UNIQUEMENT le JSON, rien d'autre.`;
   const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
