@@ -381,7 +381,8 @@ setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>f.name.endsWi
 // ── NORMALISATION & SIMILARITÉ ────────────────────────────────────────────────
 function norm(s){
   return String(s).toUpperCase()
-    .replace(/\b(SAS|SARL|SCI|SNC|SA|EURL|SCEV|EARL|SASU|CIE|ETS|DISTRIBUTION|COOPERATIVE|VINICOLE|VIGNERONS?|CHATEAU|DOMAINE|VINS?)\b/g,'')
+    // Supprimer uniquement les formes juridiques, pas les mots du nom
+    .replace(/\b(SAS|SARL|SCI|SNC|EURL|SCEV|EARL|SASU|CIE|ETS)\b/g,'')
     .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 }
 function sim(a,b){
@@ -439,28 +440,45 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.45);
   if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
 
-  // FILTRE 3 — montant ±6%
-  pool=pool.filter(r=>{
+  // FILTRE 3 — montant ±6%, fallback ±20% avec warning
+  let mtWarn=false;
+  let poolMt=pool.filter(r=>{
     if(r.mt===null)return false;
     const rv=isAvoir?Math.abs(r.mt):r.mt;
     return rv>0&&Math.abs(rv-amt)/amt<0.06;
   });
-  if(!pool.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
+  if(!poolMt.length){
+    // Fallback montant ±20%
+    poolMt=pool.filter(r=>{
+      if(r.mt===null)return false;
+      const rv=isAvoir?Math.abs(r.mt):r.mt;
+      return rv>0&&Math.abs(rv-amt)/amt<0.20;
+    });
+    if(poolMt.length)mtWarn=true;
+  }
+  if(!poolMt.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
+  pool=poolMt;
 
   // FILTRE 4 — date: commande VINOM avant facture, fenêtre 0–30j normale, élargie avec warning
   let dWarn=false;
   if(datePdf){
     pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/86400000):null}));
     const norm2=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=30);
-    if(norm2.length>0)pool=norm2;
-    else{const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=120);pool=ext.length>0?ext:pool;dWarn=true;}
+    if(norm2.length>0){
+      pool=norm2; // IMPORTANT: on prend SEULEMENT la fenêtre normale
+    } else{
+      const ext=pool.filter(r=>r.gap!==null&&r.gap>=-5&&r.gap<=120);
+      pool=ext.length>0?ext:pool;dWarn=true;
+    }
   }else pool=pool.map(r=>({...r,gap:null}));
 
   pool=pool.sort((a,b)=>Math.abs(a.gap??9999)-Math.abs(b.gap??9999));
+  // Ne garder que les 4 meilleurs candidats DANS la fenêtre retenue
   const cands=pool.slice(0,4),n=cands.length;
   let status;
-  if(n===1&&!dWarn)status='✓ MATCH UNIQUE';
-  else if(n===1&&dWarn)status='⚠ MATCH UNIQUE — ÉCART DATE';
+  if(n===1&&!dWarn&&!mtWarn)status='✓ MATCH UNIQUE';
+  else if(n===1&&dWarn&&!mtWarn)status='⚠ MATCH UNIQUE — ÉCART DATE';
+  else if(n===1&&mtWarn)status='⚠ MATCH UNIQUE — MONTANT APPROX.';
   else if(dWarn)status=`⚠ MULTI-CANDIDATS (${n}) — ÉCART DATE`;
   else status=`MULTI-CANDIDATS (${n})`;
   if(isAvoir&&status.includes('✓'))status=status.replace('✓','✓ (avoir)');
