@@ -231,7 +231,7 @@ let vinoRows=null, fournMap=null;
 let meta={vino:null,fourn:null};
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
-const K={v:'vinom2_vino',f:'vinom2_fourn',m:'vinom2_meta'};
+const K={v:'vinom3_vino',f:'vinom3_fourn',m:'vinom3_meta'};
 function sc(k,d){try{localStorage.setItem(k,JSON.stringify(d));return true;}catch(e){return false;}}
 function lc(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 
@@ -379,7 +379,7 @@ function getFournCode(fPdf){
   const k=norm(fPdf);if(k in fcCache)return fcCache[k];
   let best=null,bs=0;
   for(const [code,nom] of fournMap){const s=sim(fPdf,nom);if(s>bs){bs=s;best=code;}}
-  const r=bs>=0.25?best:null;fcCache[k]=r;return r;
+  const r=bs>=0.20?best:null;fcCache[k]=r;return r;
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
@@ -395,7 +395,7 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
 
   // FILTRE 2 — client par similarité ≥ 0.55
-  pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.55);
+  pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.45);
   if(!pool.length)return{candidates:[],status:'CLIENT NON TROUVÉ'};
 
   // FILTRE 3 — montant ±6%
