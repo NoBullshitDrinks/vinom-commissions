@@ -437,8 +437,9 @@ Règles strictes:
 - Exclure uniquement les lignes où montant_ht=0 ET commission_ht=0.
 - taux = nombre entier (15 pour 15%).
 - Dans les valeurs string, remplacer les apostrophes par un espace.
+- Si un même numéro de pièce/facture apparaît sur plusieurs lignes produit, les regrouper en UNE SEULE ligne avec le montant HT total et la commission HT totale.
 - UNIQUEMENT le JSON.`;
-  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
   const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
