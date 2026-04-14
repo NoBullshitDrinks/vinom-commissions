@@ -397,12 +397,30 @@ function cliSim(pdf,n1,rs){
 }
 
 // Cache fournisseur PDF → code Vinistoria
+// Compte les lignes Vinistoria par code fournisseur (pour départager les doublons de noms)
+let vinoCountByCode=null;
+function getVinoCount(code){
+  if(!vinoCountByCode){
+    vinoCountByCode={};
+    vinoRows.forEach(r=>{vinoCountByCode[r.fc]=(vinoCountByCode[r.fc]||0)+1;});
+  }
+  return vinoCountByCode[code]||0;
+}
 const fcCache={};
 function getFournCode(fPdf){
   const k=norm(fPdf);if(k in fcCache)return fcCache[k];
-  let best=null,bs=0;
-  for(const [code,nom] of fournMap){const s=sim(fPdf,nom);if(s>bs){bs=s;best=code;}}
-  const r=bs>=0.20?best:null;fcCache[k]=r;return r;
+  // Trouver tous les codes avec score ≥ seuil, puis prendre celui qui a le plus de lignes Vinistoria
+  const candidates=[];
+  for(const [code,nom] of fournMap){
+    const s=sim(fPdf,nom);
+    if(s>=0.20)candidates.push({code,s});
+  }
+  if(!candidates.length){fcCache[k]=null;return null;}
+  const maxScore=Math.max(...candidates.map(c=>c.s));
+  const best=candidates
+    .filter(c=>c.s>=maxScore-0.01)  // tous les codes avec score proche du max
+    .sort((a,b)=>getVinoCount(b.code)-getVinoCount(a.code))[0]; // prendre celui avec le plus de lignes Vinistoria
+  const r=best?best.code:null;fcCache[k]=r;return r;
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
@@ -494,6 +512,7 @@ async function run(){
   document.getElementById('wa').innerHTML='';sp(5);
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   Object.keys(fcCache).forEach(k=>delete fcCache[k]);
+  vinoCountByCode=null;
   try{
     const allComms=[],warns=[];
     for(let i=0;i<pdfs.length;i++){
