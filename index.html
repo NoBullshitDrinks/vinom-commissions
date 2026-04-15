@@ -223,6 +223,7 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -514,26 +515,77 @@ function matchComm(fournisseur,client,dateStr,montantHt){
 }
 
 // ── EXTRACTION PDF ─────────────────────────────────────────────────────────────
-// Compte les pages d'un PDF via le proxy (action pdf_page_count)
-async function getPdfPageCount(b64){
-  try{
-    const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'pdf_page_count',pdf_base64:b64})});
-    if(!r.ok)return 1;
-    const d=await r.json();
-    return d.page_count||1;
-  }catch(e){return 1;}
+
+// Initialiser PDF.js worker
+if(typeof pdfjsLib !== 'undefined'){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-// Appelle l'API pour une plage de pages donnée (first..last), retourne tableau JSON
-async function extractPdfPages(b64, first, last, prompt){
-  const body={model:'claude-sonnet-4-20250514',max_tokens:8000,
-    pdf_page_range:{first,last},
-    messages:[{role:'user',content:[
-      {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
-      {type:'text',text:prompt}
-    ]}]};
-  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+// Extraire le texte d'un PDF page par page via PDF.js (côté client, pas de proxy)
+async function extractPdfText(b64){
+  const bin=atob(b64);
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  const pdf=await pdfjsLib.getDocument({data:arr}).promise;
+  const pages=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const tc=await page.getTextContent();
+    // Reconstituer le texte en respectant les lignes (tri par Y puis X)
+    const items=tc.items;
+    if(!items.length){pages.push('');continue;}
+    // Grouper par ligne (même Y ±2)
+    const lines=[];let curY=null,curLine=[];
+    const sorted=[...items].sort((a,b)=>{
+      const dy=Math.round(b.transform[5])-Math.round(a.transform[5]);
+      return dy!==0?dy:a.transform[4]-b.transform[4];
+    });
+    for(const it of sorted){
+      const y=Math.round(it.transform[5]);
+      if(curY===null||Math.abs(y-curY)>3){
+        if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
+        curLine=[it];curY=y;
+      }else{curLine.push(it);}
+    }
+    if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
+    pages.push(lines.join('\n'));
+  }
+  return {pages,totalPages:pdf.numPages};
+}
+
+const EXTRACT_PROMPT=`Tu reçois le texte brut d'un relevé de commissions fournisseur (une ou plusieurs pages).
+
+Ce document peut être de deux types :
+A) Relevé par FOURNISSEUR — en-tête avec le nom du fournisseur émetteur (ex: "LES VINS AUJOUX S.A.S.", "SAS VIGNOBLES MOURAT"). Chaque ligne = une facture client.
+B) Relevé par REPRÉSENTANT (format RAFFINVINI) — en-tête "Représentant : 81  MICHELE LELLA". Le fournisseur est l'entreprise émettrice en haut.
+
+Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide :
+[{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
+
+Règles :
+- fournisseur : nom de l'entreprise émettrice en haut (ex: "LES VINS AUJOUX", "RAFFIN VINI", "VIGNOBLES MOURAT"). Jamais le nom du représentant/client.
+- agent_pdf : type B → nom du représentant (ex: "MICHELE LELLA"). Type A → "".
+- client : nom exact du client. Remplacer apostrophes typographiques par un espace.
+- date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
+- n_piece : numéro de facture (ex: "25005589", "FA031163").
+- montant_ht : base commissionnable en float (colonne "Total HT" ou "Base Com."). Peut être négatif.
+- taux : float (ex: 12.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
+- commission_ht : montant RÉEL en float, même si NON PAYEE. Peut être négatif.
+- statut_paiement : "PAYEE" ou "NON PAYEE". "Commissions Réglées:Toutes" = toutes PAYEE. "Commissions Réglées:Non" = toutes NON PAYEE.
+- Exclure les lignes de total ("Total", "Total Représentant", etc.).
+- UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
+
+// Appel API avec du texte brut (pas de PDF base64)
+async function callApiWithText(textContent){
+  const r=await fetch('/.netlify/functions/proxy',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:8000,
+      messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+textContent}]}]
+    })
+  });
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
   if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
@@ -548,53 +600,22 @@ async function extractPdfPages(b64, first, last, prompt){
     let attempt=clean;
     if(!attempt.trimEnd().endsWith(']')){const last=attempt.lastIndexOf('}');if(last>0)attempt=attempt.slice(0,last+1)+']';}
     try{return JSON.parse(attempt);}
-    catch(e2){throw new Error('JSON invalide p.'+first+'-'+last+': '+e2.message.slice(0,80));}
+    catch(e2){throw new Error('JSON invalide: '+e2.message.slice(0,100));}
   }
 }
 
-const EXTRACT_PROMPT=`Tu reçois le texte d'un relevé de commissions fournisseur (extrait avec mise en page préservée).
-
-Ce document peut être de deux types :
-A) Relevé par FOURNISSEUR — en-tête avec le nom du fournisseur émetteur (ex: "SAS VIGNOBLES MOURAT", "LES VINS AUJOUX S.A.S."). Chaque ligne = une facture client.
-B) Relevé par REPRÉSENTANT (format RAFFINVINI) — le document indique un représentant en en-tête, ex: "Représentant : 81  MICHELE LELLA". Le fournisseur est l'entreprise émettrice en haut.
-
-Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide :
-[{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
-
-Règles d'extraction :
-- fournisseur : nom de l'entreprise émettrice en haut du document (ex: "LES VINS AUJOUX", "RAFFIN VINI", "VIGNOBLES MOURAT"). Ne jamais mettre le nom du représentant/client ici.
-- agent_pdf : type B uniquement → nom complet du représentant (ex: "MICHELE LELLA", "ALEXIS DURAND"). Type A → "" (chaîne vide).
-- client : nom exact du client sur chaque ligne. Remplacer toute apostrophe ou guillemet typographique par un espace.
-- date : date de la facture en DD/MM/YYYY. Format américain possible M/D/YYYY → convertir.
-- n_piece : numéro de facture/pièce (ex: "25005589", "FA031163").
-- montant_ht : base commissionnable en float (colonne "Total HT" ou "Base Com." ou "€ HT"). Peut être négatif.
-- taux : taux commission en float (ex: 12.0, 7.9, 1.5). Si non affiché : round(commission_ht/montant_ht*100,1).
-- commission_ht : montant RÉEL de la commission en float. TOUJOURS le montant réel, même si NON PAYEE. Peut être négatif.
-- statut_paiement : "PAYEE" si commission réglée, "NON PAYEE" sinon. "Commissions Réglées:Toutes" = toutes PAYEE.
-
-Règles strictes :
-- montant_ht et commission_ht sont TOUJOURS des nombres (jamais null).
-- Inclure TOUTES les lignes, y compris avoirs (négatifs).
-- Exclure les lignes de total/sous-total ("Total Représentant", "Total", etc.).
-- Document multi-pages : extraire TOUTES les lignes visibles dans le texte fourni.
-- UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
-
-// Point d'entrée principal — gère automatiquement les PDF multi-pages
+// Point d'entrée principal — extrait le texte côté client puis envoie par chunks
 async function extractPdf(b64,fn){
-  const PAGES_PER_CHUNK=2; // 2 pages par appel max (~50 lignes = ~6500 tokens)
-  const totalPages=await getPdfPageCount(b64);
+  const PAGES_PER_CHUNK=2; // ~50 lignes par chunk max
+  const {pages,totalPages}=await extractPdfText(b64);
   
-  if(totalPages<=PAGES_PER_CHUNK){
-    // PDF court : un seul appel, toutes pages
-    return await extractPdfPages(b64,1,totalPages,EXTRACT_PROMPT);
-  }
-  
-  // PDF long : découper en tranches de PAGES_PER_CHUNK pages
   const allItems=[];
-  for(let first=1;first<=totalPages;first+=PAGES_PER_CHUNK){
-    const last=Math.min(first+PAGES_PER_CHUNK-1,totalPages);
-    ss(`  → pages ${first}–${last}/${totalPages}…`,'p');
-    const items=await extractPdfPages(b64,first,last,EXTRACT_PROMPT);
+  for(let i=0;i<totalPages;i+=PAGES_PER_CHUNK){
+    const chunkPages=pages.slice(i,i+PAGES_PER_CHUNK);
+    const text=chunkPages.join('\n\n--- PAGE SUIVANTE ---\n\n');
+    const first=i+1,last=Math.min(i+PAGES_PER_CHUNK,totalPages);
+    if(totalPages>PAGES_PER_CHUNK)ss(`  → pages ${first}–${last}/${totalPages}…`,'p');
+    const items=await callApiWithText(text);
     allItems.push(...items);
   }
   return allItems;
