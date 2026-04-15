@@ -488,19 +488,13 @@ function matchComm(fournisseur,client,dateStr,montantHt){
     }
   }else pool=pool.map(r=>({...r,gap:null}));
 
-  // Tri composite : 1) score client décroissant (priorité absolue si écart ≥ 0.15)
-  //                 2) gap croissant à score client équivalent
+  // Tri composite : score client décroissant (priorité si écart ≥0.15), puis gap croissant
   pool=pool.sort((a,b)=>{
-    const sa=a.score??0, sb=b.score??0;
-    const ga=Math.abs(a.gap??9999), gb=Math.abs(b.gap??9999);
-    // Si l'un a un score client nettement supérieur (≥0.15 d'écart), il passe devant
+    const sa=a.score??0,sb=b.score??0,ga=Math.abs(a.gap??9999),gb=Math.abs(b.gap??9999);
     if(sa-sb>=0.15)return -1;
     if(sb-sa>=0.15)return 1;
-    // Scores proches → départager par gap
     return ga-gb;
   });
-  // Si le meilleur candidat a un gap nettement plus court (≤10j d'écart avec le suivant),
-  // le retenir seul pour éviter les faux multi-candidats sur clients récurrents
   let finalPool=pool;
   if(pool.length>1&&pool[0].gap!=null){
     const bestGap=Math.abs(pool[0].gap??9999);
@@ -523,36 +517,52 @@ function matchComm(fournisseur,client,dateStr,montantHt){
 async function extractPdf(b64,fn){
   const prompt=`Tu reçois le texte d'un relevé de commissions fournisseur (extrait avec mise en page préservée).
 
-Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide:
-[{"fournisseur":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15,"commission_ht":18.52,"statut_paiement":"PAYEE ou NON PAYEE"}]
+Ce document peut être de deux types :
+A) Relevé par FOURNISSEUR — en-tête avec le nom du fournisseur émetteur (ex: "SAS VIGNOBLES MOURAT", "COOPERATIVE VINICOLE D AGHIONE"). Chaque ligne = une facture client.
+B) Relevé par REPRÉSENTANT (format RAFFINVINI) — le document indique un représentant en en-tête, ex: "Représentant : 81  MICHELE LELLA" ou "Représentant : 87  ALEXIS DURAND". Le fournisseur est l'entreprise émettrice en haut (ex: "RAFFIN VINI depuis 1995").
 
-Règles d'extraction:
-- fournisseur: nom de l'entreprise émettrice (en haut du document, ex: "DOMAINE GAUTHERON", "MAISON LEDA", "SAS ATELIER PATRICK FONT")
-- client: nom exact du client sur chaque ligne
-- date: date de la facture convertie en DD/MM/YYYY. ATTENTION — les dates peuvent être au format américain M/D/YYYY (ex: 9/1/2025 = 1er septembre 2025 = 01/09/2025, 10/31/2025 = 31 octobre 2025 = 31/10/2025)
-- n_piece: numéro de facture (ex: "25260189", "FVE26030064", "FA83557")
-- montant_ht: base commissonnable en float (colonne "€ HT" ou "Base commissionable", PAS le total TTC)
-- taux: pourcentage entier (si non affiché: round(commission_ht/montant_ht*100))
-- commission_ht: montant commission en float, 0 si NON PAYEE
-- statut_paiement: "PAYEE" ou "NON PAYEE"
+Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide :
+[{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
-Règles strictes:
-- montant_ht et commission_ht sont TOUJOURS des nombres (jamais du texte).
-- Inclure TOUTES les lignes y compris non payées.
-- Exclure les lignes de total/sous-total.
-- Remplacer les apostrophes dans les noms par un espace.
-- Si même N° facture sur plusieurs lignes produit: regrouper en une ligne (somme des montants).
-- UNIQUEMENT le JSON, rien d'autre.`;
-  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
+Règles d'extraction :
+- fournisseur : nom de l'entreprise émettrice en haut du document (ex: "RAFFIN VINI", "VIGNOBLES MOURAT", "DOMAINE GAUTHERON"). Ne jamais mettre le nom du représentant ici.
+- agent_pdf : type B uniquement → nom complet du représentant de l'en-tête (ex: "MICHELE LELLA", "ALEXIS DURAND", "BENOIT DURAND", "LUDOVIC DAMELINCOURT", "OLIVIER MOUTON"). Type A → "" (chaîne vide).
+- client : nom exact du client sur chaque ligne. Remplacer toute apostrophe ou guillemet typographique par un espace.
+- date : date de la facture en DD/MM/YYYY. Format américain possible M/D/YYYY → convertir (9/1/2025 = 01/09/2025).
+- n_piece : numéro de facture/pièce (ex: "25005589", "FA031163").
+- montant_ht : base commissionnable en float (colonne "Total HT" ou "Base Comm" ou "€ HT"). JAMAIS le TTC. Peut être négatif (avoir).
+- taux : taux commission en float avec une décimale (ex: 12.0, 7.9, 14.4). Si non affiché : round(commission_ht/montant_ht*100,1).
+- commission_ht : montant RÉEL de la commission en float. TOUJOURS le montant réel, même si NON PAYEE. Peut être négatif.
+- statut_paiement : "PAYEE" si commission réglée, "NON PAYEE" sinon. Indices : colonne "Date Règlement" vide = NON PAYEE ; mention "Commissions Réglées:Non" = toutes NON PAYEE.
+
+Règles strictes :
+- montant_ht et commission_ht sont TOUJOURS des nombres (jamais du texte ni null).
+- Inclure TOUTES les lignes, y compris avoirs (négatifs) et lignes non payées.
+- Exclure les lignes de total/sous-total ("Total Représentant", "Total général", etc.).
+- Document multi-pages : extraire TOUTES les pages sans exception.
+- UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
+
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
+  if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
   const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-  let clean=t.replace(/```json|```/g,'').trim();
+  // Extraire le JSON du bloc de code éventuel
+  let clean=t.trim();
+  const jStart=clean.indexOf('[');
+  if(jStart>0)clean=clean.slice(jStart);
+  // Sanitize apostrophes typographiques dans les valeurs string
+  clean=clean.replace(/"((?:[^"\\]|\\.)*)"/g,(m,p)=>'"'+p.replace(/[\u2018\u2019\u0060\u00B4]/g,' ').replace(/\n/g,' ')+'"');
   try{return JSON.parse(clean);}
   catch(e1){
-    clean=clean.replace(/"([^"]*)"/g,(m,p)=>'"'+p.replace(/'/g,'\u0027')+'"');
-    try{return JSON.parse(clean);}
-    catch(e2){throw new Error('JSON invalide: '+e2.message);}
+    // Réparation JSON tronqué (timeout) : fermer le tableau
+    let attempt=clean;
+    if(!attempt.trimEnd().endsWith(']')){
+      const last=attempt.lastIndexOf('}');
+      if(last>0)attempt=attempt.slice(0,last+1)+']';
+    }
+    try{return JSON.parse(attempt);}
+    catch(e2){throw new Error('JSON invalide: '+e2.message.slice(0,100));}
   }
 }
 
@@ -577,7 +587,10 @@ async function run(){
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht);
       // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
-      const agent=candidates.length>0?(candidates[0].ag||'—'):'—';
+      // Priorité : agent extrait du PDF (RAFFINVINI), sinon agent Vinistoria
+      const agent=comm.agent_pdf&&comm.agent_pdf.trim()
+        ?comm.agent_pdf.trim()
+        :(candidates.length>0?(candidates[0].ag||'—'):'—');
       if(status.includes('✓'))stats['✓']++;
       else if(status.includes('⚠'))stats['⚠']++;
       else if(status.includes('MULTI'))stats['MULTI']++;
