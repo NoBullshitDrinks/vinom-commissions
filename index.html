@@ -516,84 +516,83 @@ function matchComm(fournisseur,client,dateStr,montantHt){
 
 // ── EXTRACTION PDF ─────────────────────────────────────────────────────────────
 
-// Initialiser PDF.js worker
-if(typeof pdfjsLib !== 'undefined'){
+// Init PDF.js worker
+if(typeof pdfjsLib!=='undefined'){
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-// Extraire le texte d'un PDF page par page via PDF.js (côté client, pas de proxy)
-async function extractPdfText(b64){
-  const bin=atob(b64);
-  const arr=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-  const pdf=await pdfjsLib.getDocument({data:arr}).promise;
-  const pages=[];
-  for(let p=1;p<=pdf.numPages;p++){
-    const page=await pdf.getPage(p);
-    const tc=await page.getTextContent();
-    // Reconstituer le texte en respectant les lignes (tri par Y puis X)
-    const items=tc.items;
-    if(!items.length){pages.push('');continue;}
-    // Grouper par ligne (même Y ±2)
-    const lines=[];let curY=null,curLine=[];
-    const sorted=[...items].sort((a,b)=>{
-      const dy=Math.round(b.transform[5])-Math.round(a.transform[5]);
-      return dy!==0?dy:a.transform[4]-b.transform[4];
-    });
-    for(const it of sorted){
-      const y=Math.round(it.transform[5]);
-      if(curY===null||Math.abs(y-curY)>3){
-        if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
-        curLine=[it];curY=y;
-      }else{curLine.push(it);}
-    }
-    if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
-    pages.push(lines.join('\n'));
-  }
-  return {pages,totalPages:pdf.numPages};
-}
-
-const EXTRACT_PROMPT=`Tu reçois le texte brut d'un relevé de commissions fournisseur (une ou plusieurs pages).
-
-Ce document peut être de deux types :
-A) Relevé par FOURNISSEUR — en-tête avec le nom du fournisseur émetteur (ex: "LES VINS AUJOUX S.A.S.", "SAS VIGNOBLES MOURAT"). Chaque ligne = une facture client.
-B) Relevé par REPRÉSENTANT (format RAFFINVINI) — en-tête "Représentant : 81  MICHELE LELLA". Le fournisseur est l'entreprise émettrice en haut.
-
-Extrais TOUTES les lignes de commissions et retourne UNIQUEMENT un JSON valide :
+const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais TOUTES les lignes et retourne UNIQUEMENT un JSON valide :
 [{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
 Règles :
-- fournisseur : nom de l'entreprise émettrice en haut (ex: "LES VINS AUJOUX", "RAFFIN VINI", "VIGNOBLES MOURAT"). Jamais le nom du représentant/client.
-- agent_pdf : type B → nom du représentant (ex: "MICHELE LELLA"). Type A → "".
-- client : nom exact du client. Remplacer apostrophes typographiques par un espace.
+- fournisseur : nom de l'entreprise émettrice en haut (ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI"). Jamais le client ni le représentant.
+- agent_pdf : si le document liste les commissions d'un représentant nommé (ex: "Représentant : 81 MICHELE LELLA" ou "Employé : 0185 VINOM SARL") → mettre le nom. Sinon "".
+- client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
-- n_piece : numéro de facture (ex: "25005589", "FA031163").
-- montant_ht : base commissionnable en float (colonne "Total HT" ou "Base Com."). Peut être négatif.
-- taux : float (ex: 12.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
+- n_piece : numéro de facture/commande (ex: "CCL0237545", "FC02165089", "25005589").
+- montant_ht : base commissionnable en float. Peut être négatif.
+- taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float, même si NON PAYEE. Peut être négatif.
-- statut_paiement : "PAYEE" ou "NON PAYEE". "Commissions Réglées:Toutes" = toutes PAYEE. "Commissions Réglées:Non" = toutes NON PAYEE.
-- Exclure les lignes de total ("Total", "Total Représentant", etc.).
+- statut_paiement : "PAYEE" ou "NON PAYEE". "Commissions Réglées:Toutes" = PAYEE. "Commissions Réglées:Non" = NON PAYEE.
+- Exclure lignes de total/sous-total ("Total", "TOTAL", "Majoration", etc.).
 - UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
 
-// Appel API avec du texte brut (pas de PDF base64)
-async function callApiWithText(textContent){
-  const r=await fetch('/.netlify/functions/proxy',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:8000,
-      messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+textContent}]}]
-    })
-  });
+// Extraire texte d'un PDF natif via PDF.js (côté client)
+async function getPdfTextPages(b64){
+  const bin=atob(b64),arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  try{
+    const pdf=await pdfjsLib.getDocument({data:arr}).promise;
+    const pages=[];
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      if(!tc.items.length){pages.push('');continue;}
+      const sorted=[...tc.items].sort((a,b)=>{
+        const dy=Math.round(b.transform[5])-Math.round(a.transform[5]);
+        return dy!==0?dy:a.transform[4]-b.transform[4];
+      });
+      const lines=[];let curY=null,curLine=[];
+      for(const it of sorted){
+        const y=Math.round(it.transform[5]);
+        if(curY===null||Math.abs(y-curY)>3){
+          if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
+          curLine=[it];curY=y;
+        }else{curLine.push(it);}
+      }
+      if(curLine.length)lines.push(curLine.map(x=>x.str).join(' '));
+      pages.push(lines.join('\n'));
+    }
+    return {pages,totalPages:pdf.numPages};
+  }catch(e){return {pages:[],totalPages:0};}
+}
+
+// Appel API avec texte brut
+async function callApiText(text){
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
+      messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+text}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
   if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-  const t=d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  return parseJsonResponse(d.content.filter(b=>b.type==='text').map(b=>b.text).join(''));
+}
+
+// Appel API avec image (mode OCR pour PDF scannés)
+async function callApiOcrPage(b64,pageNum){
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'ocr_page',pdf_base64:b64,page:pageNum,prompt:EXTRACT_PROMPT})});
+  if(!r.ok)throw new Error(`API ${r.status}`);
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+  return parseJsonResponse(d.content.filter(b=>b.type==='text').map(b=>b.text).join(''));
+}
+
+// Parser JSON robuste
+function parseJsonResponse(t){
   let clean=t.trim();
   const jStart=clean.indexOf('[');
   if(jStart>0)clean=clean.slice(jStart);
-  // Sanitize apostrophes typographiques
   clean=clean.replace(/"((?:[^"\\]|\\.)*)"/g,(m,p)=>'"'+p.replace(/[\u2018\u2019\u0060\u00B4]/g,' ').replace(/\n/g,' ')+'"');
   try{return JSON.parse(clean);}
   catch(e1){
@@ -604,18 +603,39 @@ async function callApiWithText(textContent){
   }
 }
 
-// Point d'entrée principal — extrait le texte côté client puis envoie par chunks
+// Point d'entrée principal
 async function extractPdf(b64,fn){
-  const PAGES_PER_CHUNK=2; // ~50 lignes par chunk max
-  const {pages,totalPages}=await extractPdfText(b64);
+  const PAGES_PER_CHUNK=2;
+  
+  // 1) Tenter extraction texte côté client via PDF.js
+  const {pages,totalPages}=await getPdfTextPages(b64);
+  const totalText=pages.join('').replace(/\s/g,'').length;
+  
+  if(totalText>100){
+    // PDF natif : texte disponible → envoyer par chunks de 2 pages
+    const allItems=[];
+    for(let i=0;i<totalPages;i+=PAGES_PER_CHUNK){
+      const chunk=pages.slice(i,i+PAGES_PER_CHUNK).join('\n\n--- PAGE SUIVANTE ---\n\n');
+      const first=i+1,last=Math.min(i+PAGES_PER_CHUNK,totalPages);
+      if(totalPages>PAGES_PER_CHUNK)ss(`  → pages ${first}–${last}/${totalPages}…`,'p');
+      const items=await callApiText(chunk);
+      allItems.push(...items);
+    }
+    return allItems;
+  }
+  
+  // 2) PDF scanné (texte vide) → mode OCR vision page par page via proxy
+  ss(`  → PDF scanné, OCR en cours…`,'p');
+  // Obtenir le nombre de pages via le proxy
+  const cr=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'pdf_page_count',pdf_base64:b64})});
+  const cd=await cr.json();
+  const numPages=cd.page_count||4;
   
   const allItems=[];
-  for(let i=0;i<totalPages;i+=PAGES_PER_CHUNK){
-    const chunkPages=pages.slice(i,i+PAGES_PER_CHUNK);
-    const text=chunkPages.join('\n\n--- PAGE SUIVANTE ---\n\n');
-    const first=i+1,last=Math.min(i+PAGES_PER_CHUNK,totalPages);
-    if(totalPages>PAGES_PER_CHUNK)ss(`  → pages ${first}–${last}/${totalPages}…`,'p');
-    const items=await callApiWithText(text);
+  for(let p=1;p<=numPages;p++){
+    ss(`  → OCR page ${p}/${numPages}…`,'p');
+    const items=await callApiOcrPage(b64,p);
     allItems.push(...items);
   }
   return allItems;
@@ -642,7 +662,7 @@ async function run(){
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht);
       // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
-      // Priorité : agent extrait du PDF (RAFFINVINI), sinon agent Vinistoria
+      // Priorité : agent extrait du PDF (RAFFINVINI/JABOULET), sinon Vinistoria
       const agent=comm.agent_pdf&&comm.agent_pdf.trim()
         ?comm.agent_pdf.trim()
         :(candidates.length>0?(candidates[0].ag||'—'):'—');
