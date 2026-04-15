@@ -591,7 +591,7 @@ async function callImage(jpegB64){
 
 // Point d'entrée principal
 async function extractPdf(b64,fn){
-  const PAGES_PER_CHUNK=2;
+  const PAGES_PER_CHUNK=1;
 
   // Charger le PDF via PDF.js
   const bin=atob(b64),arr=new Uint8Array(bin.length);
@@ -641,7 +641,7 @@ async function extractPdf(b64,fn){
   const allItems=[];
   for(let i=0;i<pages.length;i++){
     ss(`  → lecture page ${i+1}/${totalPages}…`,'p');
-    const jpegB64=await renderPageToJpeg(pages[i].page,2.0);
+    const jpegB64=await renderPageToJpeg(pages[i].page,1.2);
     allItems.push(...await callImage(jpegB64));
   }
   return allItems;
