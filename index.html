@@ -262,8 +262,12 @@ window.addEventListener('load',()=>{
     try{localStorage.removeItem(k);}catch(e){}
   });
   const m=lc(K.m);if(m)meta=m;
-  const cv=lc(K.v);if(cv)vinoRows=cv.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
-  const cf=lc(K.f);if(cf)fournMap=new Map(cf);
+  const cv=lc(K.v);if(cv&&cv.length>0)vinoRows=cv.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
+  const cf=lc(K.f);if(cf&&cf.length>0)fournMap=new Map(cf);
+  if(!vinoRows||vinoRows.length===0||!fournMap||fournMap.size===0){
+    // Cache indisponible (mode file://) — demander rechargement
+    ss('⚠ Fichiers de référence non trouvés en cache. Veuillez charger Vinistoria et la liste fournisseurs ci-dessus.','err');
+  }
   renderRef();chk();
 });
 
@@ -285,7 +289,7 @@ function renderFL(cid,files,rm){
   files.forEach((f,i)=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<span>📄</span><span class="fi-nm">${f.name}</span><span class="fi-rm" onclick="${rm}(${i})">✕</span>`;el.appendChild(d)});
 }
 function chk(){
-  const ok=pdfs.length>0&&vinoRows&&fournMap;
+  const ok=pdfs.length>0&&vinoRows&&vinoRows.length>0&&fournMap&&fournMap.size>0;
   document.getElementById('btn-g').disabled=!ok;
   if(ok)ss('Prêt — cliquez sur Générer.','');
   else{const m=[];if(!pdfs.length)m.push('PDF');if(!vinoRows)m.push('Vinistoria');if(!fournMap)m.push('fournisseurs');ss('Manque : '+m.join(', ')+'.');}
@@ -297,7 +301,7 @@ function toggleRef(){
   b.classList.toggle('open');c.classList.toggle('open');
 }
 function renderRef(){
-  const all=vinoRows&&fournMap;
+  const all=vinoRows&&vinoRows.length>0&&fournMap&&fournMap.size>0;
   const tag=document.getElementById('ref-tag');
   tag.textContent=all?'En cache ✓':'Non chargés';tag.className=all?'tag-ok':'tag-ko';
   const d=document.getElementById('ref-disp');d.innerHTML='';
@@ -336,7 +340,7 @@ async function loadVino(f){
     const n1=String(r[iN1]||'').toUpperCase().trim();
     const rs=String(r[iRs]||'').toUpperCase().trim();
     let mt=r[iMt];
-    if(typeof mt==='string')mt=parseFloat(mt.replace(/\s/g,'').replace(',','.'));else mt=parseFloat(mt);
+    if(typeof mt==='string')mt=parseFloat(mt.replace(/[\s\u00A0\u202F\u2009]/g,'').replace(',','.'));else mt=parseFloat(mt);
     let date=r[iDt];
     if(date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
     else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
@@ -425,6 +429,7 @@ function getVinoCount(code){
 }
 const fcCache={};
 function getFournCode(fPdf){
+  if(!fournMap||fournMap.size===0)return null;
   const k=norm(fPdf);if(k in fcCache)return fcCache[k];
   // Trouver tous les codes avec score ≥ seuil, puis prendre celui qui a le plus de lignes Vinistoria
   const candidates=[];
@@ -452,9 +457,14 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   let pool=vinoRows.filter(r=>r.fc===fc);
   if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
 
-  // FILTRE 2 — montant ±6%, fallback ±20%, fallback date-only
+  // FILTRE 2 — montant ±1% (exact), fallback ±6%, fallback ±20%
   let mtWarn=false;
-  let poolMt=pool.filter(r=>{
+  const poolMtExact=pool.filter(r=>{
+    if(r.mt===null)return false;
+    const rv=isAvoir?Math.abs(r.mt):r.mt;
+    return rv>0&&Math.abs(rv-amt)/amt<0.01;
+  });
+  let poolMt=poolMtExact.length?poolMtExact:pool.filter(r=>{
     if(r.mt===null)return false;
     const rv=isAvoir?Math.abs(r.mt):r.mt;
     return rv>0&&Math.abs(rv-amt)/amt<0.06;
@@ -471,40 +481,51 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   if(!poolMt.length)return{candidates:[],status:'MONTANT NON TROUVÉ'};
   pool=poolMt;
 
-  // FILTRE 3 — client par similarité (après montant, pour éviter faux positifs)
-  // Seuil haut 0.75 sur pool déjà filtré fournisseur+montant
-  const poolCli=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)})).filter(r=>r.score>=0.75);
-  if(poolCli.length>0)pool=poolCli;
-  // Si aucun client ne passe le seuil haut, garder le pool montant mais signaler
-  // (le client sera affiché mais avec un score faible visible)
-  else pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)}));
+  // FILTRE 3 — client par similarité
+  pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)}));
+  const poolCliExact=pool.filter(r=>r.score>=0.90); // client quasi-exact
+  const poolCliGood=pool.filter(r=>r.score>=0.75);  // client correct
+  if(poolCliExact.length>0)pool=poolCliExact;
+  else if(poolCliGood.length>0)pool=poolCliGood;
+  // sinon garder tout le pool avec scores
 
-  // FILTRE 4 — date: commande VINOM avant facture, fenêtre 0–30j normale, élargie avec warning
+  // FILTRE 4 — date: gap = datePdf - dateVino (jours positifs = commande avant facture)
   let dWarn=false;
   if(datePdf){
     pool=pool.map(r=>({...r,gap:r.date?Math.round((datePdf-r.date)/86400000):null}));
-    const norm2=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=30);
-    if(norm2.length>0){
-      pool=norm2; // IMPORTANT: on prend SEULEMENT la fenêtre normale
-    } else{
-      const ext=pool.filter(r=>r.gap!==null&&r.gap>=-10&&r.gap<=180);
-      pool=ext.length>0?ext:pool;dWarn=true;
+    // Perfect match: client exact (≥0.90) + montant exact (±1%) + gap 0–30j → 1 seul candidat
+    const perfect=pool.filter(r=>r.score>=0.90&&r.gap!==null&&r.gap>=0&&r.gap<=30&&(poolMtExact.some(p=>p.nop===r.nop)));
+    if(perfect.length>0){pool=perfect;dWarn=false;}
+    else{
+      const norm2=pool.filter(r=>r.gap!==null&&r.gap>=0&&r.gap<=30);
+      if(norm2.length>0){pool=norm2;}
+      else{
+        const ext=pool.filter(r=>r.gap!==null&&r.gap>=-60&&r.gap<=365);
+        pool=ext.length>0?ext:pool;dWarn=true;
+      }
     }
   }else pool=pool.map(r=>({...r,gap:null}));
 
-  // Tri composite : score client décroissant (priorité si écart ≥0.15), puis gap croissant
+  // Tri: score client décroissant, puis gap absolu croissant
   pool=pool.sort((a,b)=>{
     const sa=a.score??0,sb=b.score??0,ga=Math.abs(a.gap??9999),gb=Math.abs(b.gap??9999);
     if(sa-sb>=0.15)return -1;
     if(sb-sa>=0.15)return 1;
     return ga-gb;
   });
+  // Réduire à 1 candidat si perfect match (score ≥0.90 + gap ≤5j)
   let finalPool=pool;
-  if(pool.length>1&&pool[0].gap!=null){
+  if(pool.length>0&&pool[0].score>=0.90){
+    const bestGap=Math.abs(pool[0].gap??9999);
+    if(bestGap<=5) finalPool=pool.slice(0,1);
+    else if(pool.length>1){
+      const secondGap=Math.abs(pool[1].gap??9999);
+      if(bestGap<=30&&secondGap-bestGap>=7) finalPool=pool.slice(0,1);
+    }
+  } else if(pool.length>1&&pool[0].gap!=null){
     const bestGap=Math.abs(pool[0].gap??9999);
     const secondGap=Math.abs(pool[1].gap??9999);
     if(bestGap<=5&&secondGap-bestGap>=7) finalPool=pool.slice(0,1);
-    else if(bestGap===0&&secondGap>0) finalPool=pool.slice(0,1);
   }
   const cands=finalPool.slice(0,4),n=cands.length;
   let status;
@@ -528,8 +549,8 @@ const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais 
 [{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
 Règles :
-- fournisseur : nom de l'entreprise émettrice en haut (ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE"). Jamais le nom du client ni du représentant.
-- agent_pdf : si le document liste les commissions d'un représentant nommé (ex: "Représentant : 81 MICHELE LELLA", "Employé : 0185 VINOM SARL") → mettre ce nom. Sinon "".
+- fournisseur : nom de l'entreprise qui ÉMET le document (logo + adresse en haut à gauche ou en haut au centre). Ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE". ATTENTION : le destinataire (ex: "VINOM SARL", "146 RUE MONTMARTRE") n'est PAS le fournisseur — c'est le client qui reçoit les commissions. Ne jamais mettre le nom du destinataire ni du représentant dans ce champ.
+- agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
 - n_piece : numéro de facture/commande (ex: "CCL0237545", "FC02165089", "25005589").
