@@ -567,7 +567,7 @@ function parseJsonResp(t){
 // Appel API avec texte brut
 async function callText(text){
   const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
       messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+text}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
@@ -578,7 +578,7 @@ async function callText(text){
 // Appel API avec image JPEG base64 (pour PDF scannés)
 async function callImage(jpegB64){
   const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:jpegB64}},
         {type:'text',text:EXTRACT_PROMPT}
