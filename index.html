@@ -428,13 +428,33 @@ function getVinoCount(code){
   return vinoCountByCode[code]||0;
 }
 const fcCache={};
+// Mots génériques exclus du matching fournisseur
+const FOURN_STOP=new Set(['LES','LE','LA','DE','DU','DES','ET','EN','AU','AUX','UN','UNE',
+  'VINS','VIN','VIGNOBLES','VIGNOBLE','DOMAINES','DOMAINE',
+  'CHATEAU','MAISON','CAVE','CAVES','CELLIER','CELLIERS',
+  'COMPAGNIE','SOCIETE','GROUPE','FRANCE','FRENCH',
+  'WINES','WINE','GRAND','GRANDS','CLOS','MAS','SCA','GFA','GFV','SCE','EARL','SCEV']);
+function sigWords(s){
+  const w=norm(s).split(' ').filter(x=>x.length>2&&!FOURN_STOP.has(x));
+  return w.length?new Set(w):new Set(norm(s).split(' ').filter(x=>x.length>2));
+}
+function simFourn(a,b){
+  const wa=sigWords(a),wb=sigWords(b);
+  if(!wa.size||!wb.size)return 0;
+  let inter=0;for(const w of wa)if(wb.has(w))inter++;
+  const union=new Set([...wa,...wb]).size;
+  const wordSim=inter/union;
+  const na=norm(a),nb=norm(b);
+  const bonus=(na.includes(nb)||nb.includes(na))?0.20:0;
+  return Math.min(1,wordSim+bonus);
+}
 function getFournCode(fPdf){
   if(!fournMap||fournMap.size===0)return null;
   const k=norm(fPdf);if(k in fcCache)return fcCache[k];
   // Trouver tous les codes avec score ≥ seuil, puis prendre celui qui a le plus de lignes Vinistoria
   const candidates=[];
   for(const [code,nom] of fournMap){
-    const s=sim(fPdf,nom);
+    const s=simFourn(fPdf,nom);
     if(s>=0.20)candidates.push({code,s});
   }
   if(!candidates.length){fcCache[k]=null;return null;}
