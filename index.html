@@ -185,14 +185,6 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
   </div>
 </div>
 
-<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">
-  <label style="font-size:11px;font-weight:600;color:var(--ink2);white-space:nowrap">Clé API Anthropic</label>
-  <input id="api-key-input" type="password" placeholder="sk-ant-..." 
-    style="flex:1;border:1.5px solid var(--cream2);border-radius:4px;padding:7px 10px;font-family:DM Mono,monospace;font-size:11px;color:var(--ink);background:var(--white);outline:none"
-    oninput="_apiKey=this.value.trim();chk()"
-    onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--cream2)'">
-  <span style="font-size:10px;color:var(--muted)">Non transmise au serveur</span>
-</div>
 <div class="gw">
   <button class="btn-g" id="btn-g" onclick="run()" disabled><span>⚡</span> Générer</button>
   <div class="st" id="st">Chargement…</div>
@@ -290,10 +282,10 @@ function renderFL(cid,files,rm){
   files.forEach((f,i)=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<span>📄</span><span class="fi-nm">${f.name}</span><span class="fi-rm" onclick="${rm}(${i})">✕</span>`;el.appendChild(d)});
 }
 function chk(){
-  const ok=pdfs.length>0&&vinoRows&&fournMap&&(document.getElementById('api-key-input')?document.getElementById('api-key-input').value.trim().length>10:false);
+  const ok=pdfs.length>0&&vinoRows&&fournMap;
   document.getElementById('btn-g').disabled=!ok;
   if(ok)ss('Prêt — cliquez sur Générer.','');
-  else{const m=[];if(!pdfs.length)m.push('PDF');if(!vinoRows)m.push('Vinistoria');if(!fournMap)m.push('fournisseurs');const k=document.getElementById('api-key-input');if(!k||k.value.trim().length<=10)m.push('clé API');ss('Manque : '+m.join(', ')+'.');}
+  else{const m=[];if(!pdfs.length)m.push('PDF');if(!vinoRows)m.push('Vinistoria');if(!fournMap)m.push('fournisseurs');ss('Manque : '+m.join(', ')+'.');}
 }
 
 // ── RENDER RÉFÉRENCE ──────────────────────────────────────────────────────────
@@ -529,14 +521,6 @@ if(typeof pdfjsLib!=='undefined'){
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-// Clé API Anthropic (saisie une fois, stockée en mémoire de session)
-let _apiKey='';
-function getApiKey(){
-  if(_apiKey)return _apiKey;
-  _apiKey=document.getElementById('api-key-input')?document.getElementById('api-key-input').value.trim():'';
-  return _apiKey;
-}
-
 const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais TOUTES les lignes et retourne UNIQUEMENT un JSON valide :
 [{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
@@ -582,7 +566,7 @@ function parseJsonResp(t){
 
 // Appel API avec texte brut
 async function callText(text){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01'},
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
       messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+text}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
@@ -593,7 +577,7 @@ async function callText(text){
 
 // Appel API avec image JPEG base64 (pour PDF scannés)
 async function callImage(jpegB64){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01'},
+  const r=await fetch('/.netlify/functions/proxy',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:jpegB64}},
