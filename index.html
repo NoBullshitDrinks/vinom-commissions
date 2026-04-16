@@ -412,9 +412,23 @@ function sim(a,b){
   return Math.min(1, Math.max(wordSim, charSim) + bonus);
 }
 function cliSim(pdf,n1,rs){
-  const a=norm(pdf),s1=sim(pdf,n1),s2=sim(pdf,rs);
-  const c3=(a.length>=4&&(norm(n1).includes(a)||a.includes(norm(n1))||norm(rs).includes(a)||a.includes(norm(rs))))?0.85:0;
-  return Math.max(s1,s2,c3);
+  // Similarité CLIENT — basée uniquement sur les mots significatifs (>2 chars)
+  // Pas de char_sim : évite les faux positifs entre noms sans rapport
+  function wordSim(a,b){
+    const na=norm(a),nb=norm(b);
+    if(!na||!nb)return 0;
+    const wa=new Set(na.split(' ').filter(w=>w.length>2));
+    const wb=new Set(nb.split(' ').filter(w=>w.length>2));
+    if(!wa.size||!wb.size)return 0;
+    let inter=0;for(const w of wa)if(wb.has(w))inter++;
+    const union=new Set([...wa,...wb]).size;
+    const ws=inter/union;
+    const bonus=(na.includes(nb)||nb.includes(na))?0.20:0;
+    return Math.min(1,ws+bonus);
+  }
+  const s1=wordSim(pdf,n1);
+  const s2=rs?wordSim(pdf,rs):0;
+  return Math.max(s1,s2);
 }
 
 // Cache fournisseur PDF → code Vinistoria
@@ -471,6 +485,10 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   let datePdf=null;
   if(dateStr){const p=dateStr.split('/');if(p.length===3)datePdf=new Date(+p[2],+p[1]-1,+p[0]);if(datePdf&&isNaN(datePdf.getTime()))datePdf=null;}
 
+  // Cas spéciaux : comptes internes VINOM — ne pas matcher
+  if(/VINOM|BUREAU VINOM/i.test(client))
+    return{candidates:[],status:'CLIENT INCONNU — Compte bureau VINOM'};
+
   // FILTRE 1 — fournisseur par code exact
   const fc=getFournCode(fournisseur);
   if(!fc)return{candidates:[],status:'FOURNISSEUR INCONNU'};
@@ -502,12 +520,16 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   pool=poolMt;
 
   // FILTRE 3 — client par similarité
+  // RÈGLE ABSOLUE: si aucun client ne ressemble au client PDF, retourner CLIENT INCONNU
+  // Ne jamais mapper sur un client sans rapport avec le nom
   pool=pool.map(r=>({...r,score:cliSim(client,r.n1,r.rs)}));
   const poolCliExact=pool.filter(r=>r.score>=0.90); // client quasi-exact
   const poolCliGood=pool.filter(r=>r.score>=0.75);  // client correct
+  const poolCliWeak=pool.filter(r=>r.score>=0.40);  // client vaguement similaire
   if(poolCliExact.length>0)pool=poolCliExact;
   else if(poolCliGood.length>0)pool=poolCliGood;
-  // sinon garder tout le pool avec scores
+  else if(poolCliWeak.length>0){pool=poolCliWeak;} // garder avec avertissement
+  else return{candidates:[],status:'CLIENT INCONNU — absent de Vinistoria'};
 
   // FILTRE 4 — date: gap = datePdf - dateVino (jours positifs = commande avant facture)
   let dWarn=false;
@@ -597,21 +619,38 @@ async function renderPageToJpeg(pdfPage, scale){
 // Parser JSON robuste
 function parseJsonResp(t){
   let c=t.trim();
+  // Trouver le début du tableau JSON
   const j=c.indexOf('[');if(j>0)c=c.slice(j);
-  c=c.replace(/"((?:[^"\\]|\\.)*)"/g,(m,p)=>'"'+p.replace(/[\u2018\u2019\u0060\u00B4]/g,' ').replace(/\n/g,' ')+'"');
-  try{return JSON.parse(c);}
-  catch(e1){
-    let a=c;
-    if(!a.trimEnd().endsWith(']')){const l=a.lastIndexOf('}');if(l>0)a=a.slice(0,l+1)+']';}
-    try{return JSON.parse(a);}
-    catch(e2){throw new Error('JSON invalide: '+e2.message.slice(0,100));}
+  // Nettoyer les guillemets typographiques et sauts de ligne dans les strings
+  c=c.replace(/"((?:[^"\\]|\\.)*)"/g,(m,p)=>'"'+p.replace(/[\u2018\u2019\u0060\u00B4]/g,"'").replace(/\n|\r/g,' ').replace(/\t/g,' ')+'"');
+  // Essai 1 : JSON direct
+  try{return JSON.parse(c);}catch(e1){}
+  // Essai 2 : tronqué — garder uniquement les objets complets
+  let a=c;
+  // Supprimer le dernier objet incomplet s'il existe
+  const lastClose=a.lastIndexOf('}');
+  if(lastClose>0){
+    a=a.slice(0,lastClose+1);
+    if(!a.trimEnd().endsWith(']'))a+=']';
   }
+  try{return JSON.parse(a);}catch(e2){}
+  // Essai 3 : reconstruire objet par objet
+  const objs=[];let depth=0,start=-1;
+  for(let i=0;i<c.length;i++){
+    if(c[i]==='{'){if(depth===0)start=i;depth++;}
+    else if(c[i]==='}'){depth--;if(depth===0&&start>=0){
+      try{objs.push(JSON.parse(c.slice(start,i+1)));}catch(_){}
+      start=-1;
+    }}
+  }
+  if(objs.length)return objs;
+  throw new Error('JSON invalide — aucun objet récupérable');
 }
 
 // Appel API avec texte brut
 async function callText(text){
   const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
       messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+text}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
@@ -622,7 +661,7 @@ async function callText(text){
 // Appel API avec image JPEG base64 (pour PDF scannés)
 async function callImage(jpegB64){
   const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:jpegB64}},
         {type:'text',text:EXTRACT_PROMPT}
