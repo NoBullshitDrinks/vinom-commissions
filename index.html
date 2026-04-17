@@ -591,7 +591,7 @@ const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais 
 [{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
 Règles :
-- fournisseur : nom de l'entreprise qui ÉMET le document (logo + adresse en haut à gauche ou en haut au centre). Ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE". ATTENTION : le destinataire (ex: "VINOM SARL", "146 RUE MONTMARTRE") n'est PAS le fournisseur — c'est le client qui reçoit les commissions. Ne jamais mettre le nom du destinataire ni du représentant dans ce champ.
+- fournisseur : nom de l'entreprise qui ÉMET le document (logo + adresse en haut à gauche ou en haut au centre). Ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE". RÈGLE ABSOLUE : ne JAMAIS mettre "VINOM", "VINOM SARL", "VINOM SAS" ou toute variante de VINOM dans ce champ — VINOM est toujours le destinataire, jamais l'émetteur. De même ne jamais mettre une adresse postale ou un nom de représentant dans ce champ.
 - agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
@@ -747,6 +747,29 @@ async function run(){
       catch(e){warns.push(`${f.name}: ${e.message}`);}
     }
     sp(75);ss('Rapprochement…','p');
+
+    // ── CORRECTION POST-EXTRACTION ──────────────────────────────────────────
+    // Si Claude Vision extrait "VINOM SARL" comme fournisseur (scan mal lu),
+    // remplacer par le vrai fournisseur détecté depuis les autres lignes du même PDF
+    const srcGroups={};
+    allComms.forEach(c=>{
+      if(!srcGroups[c._src])srcGroups[c._src]=[];
+      srcGroups[c._src].push(c);
+    });
+    Object.values(srcGroups).forEach(grp=>{
+      // Compter les fournisseurs non-VINOM dans ce PDF
+      const nonVinom=grp.filter(c=>!/^vinom/i.test(c.fournisseur.trim()));
+      const vinomligs=grp.filter(c=>/^vinom/i.test(c.fournisseur.trim()));
+      if(vinomligs.length>0&&nonVinom.length>0){
+        // Prendre le fournisseur le plus fréquent parmi les lignes non-VINOM
+        const freq={};
+        nonVinom.forEach(c=>{const f=c.fournisseur.trim();freq[f]=(freq[f]||0)+1;});
+        const realFourn=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+        vinomligs.forEach(c=>{c.fournisseur=realFourn;});
+      }
+    });
+    // ────────────────────────────────────────────────────────────────────────
+
     const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht);
