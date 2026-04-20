@@ -597,10 +597,10 @@ Règles :
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
 - n_piece : numéro de la facture fournisseur (ex: "FA287660", "FA287662", "CCL0237545"). Une facture = une ligne JSON, même si elle contient plusieurs produits. Utiliser aussi le numéro de commande VINOM s'il est présent (ex: "C26000437").
-- montant_ht : TOTAL HT de la facture entière (pas par article). Dans les relevés avec détail produit par produit, additionner tous les articles d'une même facture pour obtenir le total. Ex: si une facture contient 3 lignes produits à 276€+67.8€+... → utiliser le total figurant en bas de facture (ex: "343,80"). Peut être négatif.
+- montant_ht : TOTAL HT de la facture entière (pas par article). RÈGLE CRITIQUE : une seule valeur par facture = le sous-total HT qui apparaît en bas de chaque bloc facture (ligne avec uniquement un montant suivi de tirets, ex: "343,80 |------"). Ne JAMAIS utiliser le montant TTC ni décomposer par produit. Si la facture FA287662 contient les lignes produits 276.00 + 67.80 et affiche "343,80" en sous-total → montant_ht = 343.80. Peut être négatif.
 - taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float pour la facture entière, même si NON PAYEE. Peut être négatif.
-- IMPORTANT : une entrée JSON = une facture (identifiée par son numéro FA ou n_piece). Ne pas créer une entrée par ligne produit.
+- IMPORTANT : une entrée JSON = une facture (identifiée par son numéro FA ou n_piece). Ne JAMAIS créer une entrée par ligne produit. Ex: FA287662 avec 2 produits = 1 seule entrée JSON avec montant_ht=343.80, pas 2 entrées à 276.00 et 67.80.
 - statut_paiement : "PAYEE" par défaut (si une commission figure dans le relevé, elle est réglée sauf mention contraire explicite). Mettre "NON PAYEE" uniquement si le document indique explicitement "non payé", "impayé", "à régler" ou équivalent.
 - Exclure lignes de total/sous-total ("Total", "TOTAL", "Majoration", etc.).
 - UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
@@ -751,24 +751,45 @@ async function run(){
     sp(75);ss('Rapprochement…','p');
 
     // ── CORRECTION POST-EXTRACTION ──────────────────────────────────────────
-    // Si Claude Vision extrait "VINOM SARL" comme fournisseur (scan mal lu),
-    // remplacer par le vrai fournisseur détecté depuis les autres lignes du même PDF
     const srcGroups={};
     allComms.forEach(c=>{
       if(!srcGroups[c._src])srcGroups[c._src]=[];
       srcGroups[c._src].push(c);
     });
     Object.values(srcGroups).forEach(grp=>{
-      // Compter les fournisseurs non-VINOM dans ce PDF
+      // 1. Corriger fournisseur VINOM mal extrait
       const nonVinom=grp.filter(c=>!/^vinom/i.test(c.fournisseur.trim()));
       const vinomligs=grp.filter(c=>/^vinom/i.test(c.fournisseur.trim()));
       if(vinomligs.length>0&&nonVinom.length>0){
-        // Prendre le fournisseur le plus fréquent parmi les lignes non-VINOM
         const freq={};
         nonVinom.forEach(c=>{const f=c.fournisseur.trim();freq[f]=(freq[f]||0)+1;});
         const realFourn=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
         vinomligs.forEach(c=>{c.fournisseur=realFourn;});
       }
+      // 2. Regrouper les lignes du même n_piece (même facture) extraites par erreur
+      // en plusieurs entrées produit → fusionner en 1 entrée avec montant total
+      const byNpiece={};
+      grp.forEach(c=>{
+        const key=c.fournisseur+'|'+c.client+'|'+c.n_piece;
+        if(!byNpiece[key])byNpiece[key]=[];
+        byNpiece[key].push(c);
+      });
+      // Remplacer les doublons de n_piece par une seule entrée avec somme
+      Object.values(byNpiece).forEach(group=>{
+        if(group.length>1){
+          // Garder la première entrée, sommer les montants
+          const base=group[0];
+          const totalMt=group.reduce((s,c)=>s+(parseFloat(c.montant_ht)||0),0);
+          const totalCom=group.reduce((s,c)=>s+(parseFloat(c.commission_ht)||0),0);
+          base.montant_ht=Math.round(totalMt*100)/100;
+          base.commission_ht=Math.round(totalCom*100)/100;
+          // Supprimer les doublons du tableau allComms
+          group.slice(1).forEach(dup=>{
+            const idx=allComms.indexOf(dup);
+            if(idx>=0)allComms.splice(idx,1);
+          });
+        }
+      });
     });
     // ────────────────────────────────────────────────────────────────────────
 
