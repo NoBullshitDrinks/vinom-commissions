@@ -210,7 +210,7 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
   <div class="tw">
     <table>
       <thead><tr>
-        <th>Fournisseur</th><th>Client</th><th>Agent</th>
+        <th>Fournisseur</th><th>Client</th><th>Agence</th><th>Agent</th>
         <th>Date facture</th><th>N° Pièce</th><th>Montant HT</th><th>Taux</th><th>Commission HT</th><th>Paiement</th>
         <th>N° Op. VINOM</th><th>Date commande</th><th>Montant VINOM</th><th>Écart (j)</th>
         <th>Statut rapprochement</th>
@@ -588,10 +588,11 @@ if(typeof pdfjsLib!=='undefined'){
 }
 
 const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais TOUTES les lignes et retourne UNIQUEMENT un JSON valide :
-[{"fournisseur":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
+[{"fournisseur":"...","agence":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
 Règles :
 - fournisseur : nom de l'entreprise qui ÉMET le document (logo + adresse en haut à gauche ou en haut au centre). Ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE". RÈGLE ABSOLUE : ne JAMAIS mettre "VINOM", "VINOM SARL", "VINOM SAS" ou toute variante de VINOM dans ce champ — VINOM est toujours le destinataire, jamais l'émetteur. De même ne jamais mettre une adresse postale ou un nom de représentant dans ce champ.
+- agence : nom de l'agence commerciale mentionnée dans l'en-tête (ex: "Représentant : 0087 AGENCE LES GOUTTES JY ROMAIN" → "LES GOUTTES", "Représentant : 545 VINOM" → "VINOM", "Représentant : CVC" → "CVC"). Si non mentionné, laisser vide.
 - agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
@@ -599,7 +600,7 @@ Règles :
 - montant_ht : base commissionnable en float. Peut être négatif.
 - taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float, même si NON PAYEE. Peut être négatif.
-- statut_paiement : "PAYEE" ou "NON PAYEE". "Commissions Réglées:Toutes" = PAYEE. "Commissions Réglées:Non" = NON PAYEE.
+- statut_paiement : "PAYEE" par défaut (si une commission figure dans le relevé, elle est réglée sauf mention contraire explicite). Mettre "NON PAYEE" uniquement si le document indique explicitement "non payé", "impayé", "à régler" ou équivalent.
 - Exclure lignes de total/sous-total ("Total", "TOTAL", "Majoration", etc.).
 - UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
 
@@ -816,6 +817,7 @@ function renderTable(rows,q,y){
     tr.innerHTML=`
       <td><span class="fb" style="background:${col}20;color:${col};border:1px solid ${col}40">${comm.fournisseur||'—'}</span></td>
       <td>${comm.client||'—'}</td>
+      <td class="ct">${comm.agence||'—'}</td>
       <td class="mo">${comm.agent||'—'}</td>
       <td class="ct">${comm.date||'—'}</td>
       <td class="mo">${comm.n_piece||'—'}</td>
@@ -848,9 +850,9 @@ function renderStats(s){
 // ── EXPORTS ────────────────────────────────────────────────────────────────────
 function dlCSV(){
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
-  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
+  const h=['Fournisseur','Agence','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
   const lines=[h.join(';')];
-  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.mt||'').replace('.',','),c.gap!=null?c.gap:'',status].join(';'));});
+  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.agence||"",comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.mt||'').replace('.',','),c.gap!=null?c.gap:'',status].join(';'));});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Commissions_${q}${y}_VINOM.csv`;a.click();
 }
 function dlXLSX(){
@@ -860,7 +862,7 @@ function dlXLSX(){
   const data=[];
   lastRows.forEach(({comm,candidates,status})=>{
     const c=candidates[0]||{};
-    data.push([comm.fournisseur,comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.mt||'',c.gap!=null?c.gap:'',status]);
+    data.push([comm.fournisseur,comm.agence||"",comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.mt||'',c.gap!=null?c.gap:'',status]);
     candidates.slice(1).forEach((cc,ci)=>data.push(['','','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.mt||'',cc.gap!=null?cc.gap:'',`↳ candidat ${ci+2}`]));
   });
   const tHT=lastRows.reduce((s,{comm})=>s+(comm.montant_ht||0),0);
