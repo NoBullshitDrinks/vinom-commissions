@@ -113,10 +113,10 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 
 <!-- PDF -->
 <div class="sec-req">
-  <div class="sec-title">📄 Relevés fournisseurs (PDF) <span class="tag-req">À charger à chaque trimestre</span></div>
+  <div class="sec-title">📄 Relevés fournisseurs (PDF ou Excel) <span class="tag-req">À charger à chaque trimestre</span></div>
   <div class="sec-desc">Relevés de commissions reçus des fournisseurs — tous formats acceptés</div>
   <div class="dz" id="dz-pdf" onclick="document.getElementById('in-pdf').click()">
-    <div class="dz-ic">📄</div><div class="dz-tx">Déposer les PDF ici ou cliquer</div><div class="dz-ht">Plusieurs fichiers acceptés</div>
+    <div class="dz-ic">📄</div><div class="dz-tx">Déposer les relevés ici (PDF ou Excel) ou cliquer</div><div class="dz-ht">Plusieurs fichiers acceptés</div>
   </div>
   <input type="file" id="in-pdf" accept=".pdf,.xls,.xlsx" multiple>
   <div class="fl" id="fl-pdf"></div>
@@ -374,7 +374,7 @@ async function loadFourn(f){
 
 // ── DROP ZONES ────────────────────────────────────────────────────────────────
 function rmPdf(i){pdfs.splice(i,1);renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();}
-setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>f.name.toLowerCase().endsWith('.pdf'))];renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();});
+setupDZ('dz-pdf','in-pdf',files=>{pdfs=[...pdfs,...files.filter(f=>{const n=f.name.toLowerCase();return n.endsWith('.pdf')||n.endsWith('.xls')||n.endsWith('.xlsx');})];renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();});
 ['f','u'].forEach(sfx=>{
   setupDZ(`dz-vino-${sfx}`,`in-vino-${sfx}`,async files=>{
     if(!files[0])return;renderFL(`fl-vino-${sfx}`,[files[0]],()=>{});document.getElementById(`dz-vino-${sfx}`).classList.add('has-files');
