@@ -750,78 +750,96 @@ async function extractPdf(b64,fn){
 // ── RUN ────────────────────────────────────────────────────────────────────────
 // ── EXTRACTION XLS/XLSX (format DEUTZ et similaires) ─────────────────────────
 async function extractXls(file){
-  // Lire le fichier avec SheetJS
+  // Lire le fichier
   const buf=await file.arrayBuffer();
-  const wb=XLSX.read(buf,{type:'array',cellDates:true});
+  const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false});
+  console.log('[XLS] Feuilles:', wb.SheetNames);
   
-  // Chercher la feuille principale (France, Sheet1, ou première feuille)
-  const shName=wb.SheetNames.find(n=>/france|feuil|sheet|commiss/i.test(n))||wb.SheetNames[0];
+  const shName=wb.SheetNames.find(n=>/france/i.test(n))||wb.SheetNames[0];
+  console.log('[XLS] Feuille utilisée:', shName);
   const ws=wb.Sheets[shName];
   const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  
-  // Détecter le représentant / agence dans l'en-tête
-  let agence='',fournisseur='';
-  for(let i=0;i<Math.min(20,data.length);i++){
-    const row=data[i].map(v=>String(v||'').trim());
-    const joined=row.join(' ');
-    // Fournisseur dans l'en-tête
-    if(/champagne|domaine|chateau|maison|cave/i.test(joined)&&!fournisseur){
-      const f=row.find(v=>v.length>3&&/champagne|deutz|jaboulet|aujoux/i.test(v));
-      if(f)fournisseur=f;
-    }
-    // Représentant : "251 VINOM" → agence=VINOM
-    if(/representant|représentant/i.test(joined)){
-      const next=data[i+1]||[];
-      const ag=next.map(v=>String(v||'').trim()).filter(v=>v.length>1).join(' ');
-      if(ag)agence=ag.replace(/^\d+\s*/,'').split(' ').slice(0,2).join(' ');
+  console.log('[XLS] Lignes totales:', data.length);
+
+  // Détecter l'agence/représentant dans l'en-tête
+  let agence='',fournisseur='CHAMPAGNE DEUTZ';
+  for(let i=0;i<Math.min(15,data.length);i++){
+    const row=data[i];
+    for(let j=0;j<row.length;j++){
+      const v=String(row[j]||'').trim();
+      if(/champagne|deutz|jaboulet|aujoux|chablisienne/i.test(v)&&v.length>3)
+        fournisseur=v;
+      if(/representant|représentant/i.test(v)){
+        // Ligne suivante contient "251 VINOM"
+        const next=data[i+1]||[];
+        const parts=next.map(x=>String(x||'').trim()).filter(x=>x);
+        if(parts.length>=2)agence=parts.slice(1).join(' ').trim();
+        else if(parts.length===1)agence=parts[0].trim();
+      }
     }
   }
-  if(!fournisseur)fournisseur=file.name.replace(/[_\-].*$/,'').trim()||'INCONNU';
-  
-  // Trouver la ligne d'en-tête de données (contient "Type" et "N°")
-  let dataStart=-1,colNop=-1,colType=-1,colFaf=-1,colDate=-1,colClient=-1,colTaux=-1,colComm=-1;
+  console.log('[XLS] Fournisseur:', fournisseur, '| Agence:', agence);
+
+  // Trouver la ligne d'en-tête de données
+  let hdr=-1;
   for(let i=0;i<data.length;i++){
-    const row=data[i].map(v=>String(v||'').trim());
-    if(row.includes('Type')&&(row.includes('N°')||row.includes('Tiers'))){
-      dataStart=i+2; // sauter ligne sous-headers "a payer / en suspens"
-      colNop=1;      // N° Vinistoria
-      colType=3;     // FAF/AFA
-      colFaf=4;      // N° facture
-      colDate=5;     // Date
-      colClient=8;   // Tiers (nom client)
-      colTaux=20;    // Taux %
-      colComm=25;    // Commission à payer
-      break;
+    const vals=data[i].map(v=>String(v||'').trim());
+    if(vals.includes('Type')&&(vals.includes('N°')||vals.includes('Tiers'))){
+      hdr=i; break;
     }
   }
-  if(dataStart<0)throw new Error('Format XLS non reconnu — en-tête introuvable');
-  
-  // Parser les lignes et regrouper par N° VINOM
+  console.log('[XLS] Ligne en-tête:', hdr);
+  if(hdr<0)throw new Error('Format XLS non reconnu — en-tête introuvable');
+
+  // Détecter les indices de colonnes depuis l'en-tête
+  const hrow=data[hdr].map(v=>String(v||'').trim());
+  // Indices fixes validés pour DEUTZ:
+  // col1=Référence(N°VINOM), col3=Type, col4=N°FAF, col5=Date, col8=Tiers(client)
+  // col20=Taux, col25=Commission à payer
+  // Mais cherchons dynamiquement pour être robuste
+  const colType=hrow.indexOf('Type');
+  const colFaf=hrow.indexOf('N°');
+  const colDate=hrow.indexOf('Date');
+  const colClient=hrow.indexOf('Tiers');
+  const colTaux=hrow.indexOf('Taux');
+  // "- Commission -" → chercher "Commission"
+  const colComm=hrow.findIndex(v=>/commission/i.test(v));
+  // Référence = col avant Type
+  const colNop=colType>0?colType-2:1;
+  console.log('[XLS] Colonnes:', {colNop,colType,colFaf,colDate,colClient,colTaux,colComm});
+
+  const dataStart=hdr+2; // sauter sous-header "a payer/en suspens"
+  console.log('[XLS] Données depuis ligne:', dataStart);
+
+  // Convertir serial Excel → date string
+  function excelDateToStr(v){
+    if(!v||v===0)return '';
+    const d=new Date(Math.round((parseFloat(v)-25569)*86400000));
+    if(isNaN(d.getTime()))return '';
+    return d.toLocaleDateString('fr-FR');
+  }
+
+  // Parser et regrouper par N° VINOM
   const entries={};
+  let countParsed=0;
   for(let i=dataStart;i<data.length;i++){
     const row=data[i];
     const type=String(row[colType]||'').trim();
     if(!['FAF','AFA','FAV'].includes(type))continue;
-    
+    countParsed++;
+
     const nopRaw=String(row[colNop]||'').trim().replace(/^C\s*/i,'').replace(/\s+/g,'');
     const nfaf=String(row[colFaf]||'').trim().split('.')[0];
     const client=String(row[colClient]||'').trim();
-    const dateVal=row[colDate];
-    let dateStr='';
-    if(dateVal instanceof Date)dateStr=dateVal.toLocaleDateString('fr-FR');
-    else if(typeof dateVal==='number'){
-      // Serial Excel
-      const d=new Date(Math.round((dateVal-25569)*86400000));
-      dateStr=d.toLocaleDateString('fr-FR');
-    }else dateStr=String(dateVal||'').trim();
+    const dateStr=excelDateToStr(row[colDate]);
     const taux=parseFloat(row[colTaux])||0;
     const comm=parseFloat(row[colComm])||0;
-    
+
     if(!client||/^vinom$/i.test(client))continue;
-    
+
     const isVinomNop=nopRaw&&/^\d{7,8}$/.test(nopRaw);
-    const key=isVinomNop?nopRaw:`FAF${nfaf}`;
-    
+    const key=isVinomNop?nopRaw:('FAF'+nfaf);
+
     if(!entries[key]){
       entries[key]={
         fournisseur,agence,agent_pdf:'',
@@ -833,12 +851,15 @@ async function extractXls(file){
     }
     entries[key].commission_ht=Math.round((entries[key].commission_ht+comm)*100)/100;
   }
-  
+  console.log('[XLS] Lignes FAF parsées:', countParsed, '| Entrées uniques:', Object.keys(entries).length);
+
   // Calculer montant_ht depuis commission et taux
-  return Object.values(entries).map(e=>{
+  const result=Object.values(entries).map(e=>{
     if(e.taux>0)e.montant_ht=Math.round(e.commission_ht/e.taux*100*100)/100;
     return e;
   });
+  console.log('[XLS] Résultat final:', result.length, 'entrées');
+  return result;
 }
 
 
