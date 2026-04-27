@@ -791,22 +791,36 @@ async function extractXls(file){
   console.log('[XLS] Ligne en-tête:', hdr);
   if(hdr<0)throw new Error('Format XLS non reconnu — en-tête introuvable');
 
-  // Détecter les indices de colonnes depuis l'en-tête
+  // Détecter les indices de colonnes depuis l'en-tête (détection dynamique)
   const hrow=data[hdr].map(v=>String(v||'').trim());
-  // Indices fixes validés pour DEUTZ:
-  // col1=Référence(N°VINOM), col3=Type, col4=N°FAF, col5=Date, col8=Tiers(client)
-  // col20=Taux, col25=Commission à payer
-  // Mais cherchons dynamiquement pour être robuste
   const colType=hrow.indexOf('Type');
   const colFaf=hrow.indexOf('N°');
   const colDate=hrow.indexOf('Date');
   const colClient=hrow.indexOf('Tiers');
   const colTaux=hrow.indexOf('Taux');
-  // "- Commission -" → chercher "Commission"
-  const colComm=hrow.findIndex(v=>/commission/i.test(v));
-  // Référence = col avant Type
-  const colNop=colType>0?colType-2:1;
-  console.log('[XLS] Colonnes:', {colNop,colType,colFaf,colDate,colClient,colTaux,colComm});
+  // "- Commission -" header → chercher "Commission" → c'est la colonne "à payer"
+  const colCommPayer=hrow.findIndex(v=>/commission/i.test(v));
+  // La colonne suivante "en suspens" est colCommPayer+1 (d'après le sous-header L18)
+  // On vérifie dans le sous-header (hdr+1) pour confirmer
+  const subhdr=(data[hdr+1]||[]).map(v=>String(v||'').trim());
+  // subhdr contient ['','','','','','','','','','','','','','','','','','','','','','','','','a payer','en suspens','a reprendre']
+  // Trouver "a payer" et "en suspens" dans le sous-header
+  const colAPayer=subhdr.findIndex(v=>/a payer|apayer/i.test(v));
+  const colEnSuspens=subhdr.findIndex(v=>/en suspens|suspens/i.test(v));
+  // Si détectés, les utiliser; sinon fallback sur colCommPayer et colCommPayer+1
+  const colComm=colAPayer>=0?colAPayer:colCommPayer;
+  const colSuspens=colEnSuspens>=0?colEnSuspens:(colCommPayer>=0?colCommPayer+1:-1);
+  // N° VINOM = colonne juste AVANT Type (SheetJS peut décaler selon colonnes vides)
+  // On cherche la première colonne non-vide dans une ligne de données
+  const sampleRow=data[hdr+2]||[];
+  // colNop = chercher le N° VINOM (7-8 chiffres) dans les colonnes avant colType
+  let colNop=-1;
+  for(let c=0;c<colType;c++){
+    const v=String(sampleRow[c]||'').trim();
+    if(/^\d{7,8}$/.test(v)){colNop=c;break;}
+  }
+  if(colNop<0)colNop=Math.max(0,colType-2); // fallback
+  console.log('[XLS] Colonnes détectées:', {colNop,colType,colFaf,colDate,colClient,colTaux,colComm,colSuspens});
 
   const dataStart=hdr+2; // sauter sous-header "a payer/en suspens"
   console.log('[XLS] Données depuis ligne:', dataStart);
@@ -828,12 +842,18 @@ async function extractXls(file){
     if(!['FAF','AFA','FAV'].includes(type))continue;
     countParsed++;
 
-    const nopRaw=String(row[colNop]||'').trim().replace(/^C\s*/i,'').replace(/\s+/g,'');
+    // N° VINOM : doit être 7-8 chiffres — sinon c'est un nom de société (JOLI MOME etc.)
+    const nopRawAll=String(row[colNop]||'').trim().replace(/^C\s*/i,'').replace(/\s+/g,'');
+    const nopRaw=/^\d{7,8}$/.test(nopRawAll)?nopRawAll:'';
     const nfaf=String(row[colFaf]||'').trim().split('.')[0];
     const client=String(row[colClient]||'').trim();
     const dateStr=excelDateToStr(row[colDate]);
     const taux=parseFloat(row[colTaux])||0;
-    const comm=parseFloat(row[colComm])||0;
+    const commPayer=parseFloat(row[colComm])||0;
+    const commSusp=colSuspens>=0?(parseFloat(row[colSuspens])||0):0;
+    // Prendre le total des deux colonnes (à payer + en suspens)
+    // Si à payer=0, en suspens peut contenir la vraie valeur et vice-versa
+    const comm=commPayer+commSusp;
 
     if(!client||/^vinom$/i.test(client))continue;
 
