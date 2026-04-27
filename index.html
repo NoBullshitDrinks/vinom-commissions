@@ -118,7 +118,7 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
   <div class="dz" id="dz-pdf" onclick="document.getElementById('in-pdf').click()">
     <div class="dz-ic">📄</div><div class="dz-tx">Déposer les PDF ici ou cliquer</div><div class="dz-ht">Plusieurs fichiers acceptés</div>
   </div>
-  <input type="file" id="in-pdf" accept=".pdf" multiple>
+  <input type="file" id="in-pdf" accept=".pdf,.xls,.xlsx" multiple>
   <div class="fl" id="fl-pdf"></div>
   <div class="pr"><label>Période :</label>
     <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
@@ -480,7 +480,7 @@ function getFournCode(fPdf){
 }
 
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
-function matchComm(fournisseur,client,dateStr,montantHt){
+function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
   const isAvoir=montantHt<0,amt=Math.abs(parseFloat(montantHt));
   let datePdf=null;
   if(dateStr){const p=dateStr.split('/');if(p.length===3)datePdf=new Date(+p[2],+p[1]-1,+p[0]);if(datePdf&&isNaN(datePdf.getTime()))datePdf=null;}
@@ -488,6 +488,21 @@ function matchComm(fournisseur,client,dateStr,montantHt){
   // Cas spéciaux : comptes internes VINOM — ne pas matcher
   if(/VINOM|BUREAU VINOM/i.test(client))
     return{candidates:[],status:'CLIENT INCONNU — Compte bureau VINOM'};
+
+  // FILTRE 0 — match direct par N° Opération VINOM si n_piece le contient
+  // Format: commence par C suivi de chiffres, ou nombre à 8 chiffres seul
+  const nopFromPiece=nPiece?String(nPiece).trim().replace(/^C/i,'').replace(/\s+/g,''):'';
+  if(nopFromPiece&&/^\d{8}$/.test(nopFromPiece)){
+    const nopNum=parseInt(nopFromPiece);
+    const directMatch=vinoRows.find(r=>r.nop===nopNum);
+    if(directMatch){
+      const score=cliSim(client,directMatch.n1,directMatch.rs);
+      // Accepter même avec score faible si le N° correspond exactement
+      const gap=datePdf?Math.round((datePdf-directMatch.date)/86400000):null;
+      const status=gap!==null&&Math.abs(gap)>30?'⚠ MATCH PAR N° VINOM — ÉCART DATE':'✓ MATCH PAR N° VINOM';
+      return{candidates:[{...directMatch,score:score>=0?score:0.5,gap}],status};
+    }
+  }
 
   // FILTRE 1 — fournisseur par code exact
   const fc=getFournCode(fournisseur);
@@ -596,7 +611,7 @@ Règles :
 - agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
-- n_piece : numéro de la facture fournisseur (ex: "FA287660", "FA287662", "CCL0237545"). Une facture = une ligne JSON, même si elle contient plusieurs produits. Utiliser aussi le numéro de commande VINOM s'il est présent (ex: "C26000437").
+- n_piece : numéro de commande VINOM en PRIORITÉ s'il est présent sur la ligne (ex: "C26000437", "C26001036", "25012897" — commence par C ou est un nombre à 8 chiffres). Si absent, utiliser le numéro de facture fournisseur (ex: "FA287660"). Le N° commande VINOM est souvent sur la même ligne que le N° facture fournisseur : ex "FA287660 C26000437 C26000437" → n_piece="C26000437".
 - montant_ht : TOTAL HT de la facture entière (pas par article). RÈGLE CRITIQUE : une seule valeur par facture = le sous-total HT qui apparaît en bas de chaque bloc facture (ligne avec uniquement un montant suivi de tirets, ex: "343,80 |------"). Ne JAMAIS utiliser le montant TTC ni décomposer par produit. Si la facture FA287662 contient les lignes produits 276.00 + 67.80 et affiche "343,80" en sous-total → montant_ht = 343.80. Peut être négatif.
 - taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float pour la facture entière, même si NON PAYEE. Peut être négatif.
@@ -733,6 +748,100 @@ async function extractPdf(b64,fn){
 }
 
 // ── RUN ────────────────────────────────────────────────────────────────────────
+// ── EXTRACTION XLS/XLSX (format DEUTZ et similaires) ─────────────────────────
+async function extractXls(file){
+  // Lire le fichier avec SheetJS
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array',cellDates:true});
+  
+  // Chercher la feuille principale (France, Sheet1, ou première feuille)
+  const shName=wb.SheetNames.find(n=>/france|feuil|sheet|commiss/i.test(n))||wb.SheetNames[0];
+  const ws=wb.Sheets[shName];
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  
+  // Détecter le représentant / agence dans l'en-tête
+  let agence='',fournisseur='';
+  for(let i=0;i<Math.min(20,data.length);i++){
+    const row=data[i].map(v=>String(v||'').trim());
+    const joined=row.join(' ');
+    // Fournisseur dans l'en-tête
+    if(/champagne|domaine|chateau|maison|cave/i.test(joined)&&!fournisseur){
+      const f=row.find(v=>v.length>3&&/champagne|deutz|jaboulet|aujoux/i.test(v));
+      if(f)fournisseur=f;
+    }
+    // Représentant : "251 VINOM" → agence=VINOM
+    if(/representant|représentant/i.test(joined)){
+      const next=data[i+1]||[];
+      const ag=next.map(v=>String(v||'').trim()).filter(v=>v.length>1).join(' ');
+      if(ag)agence=ag.replace(/^\d+\s*/,'').split(' ').slice(0,2).join(' ');
+    }
+  }
+  if(!fournisseur)fournisseur=file.name.replace(/[_\-].*$/,'').trim()||'INCONNU';
+  
+  // Trouver la ligne d'en-tête de données (contient "Type" et "N°")
+  let dataStart=-1,colNop=-1,colType=-1,colFaf=-1,colDate=-1,colClient=-1,colTaux=-1,colComm=-1;
+  for(let i=0;i<data.length;i++){
+    const row=data[i].map(v=>String(v||'').trim());
+    if(row.includes('Type')&&(row.includes('N°')||row.includes('Tiers'))){
+      dataStart=i+2; // sauter ligne sous-headers "a payer / en suspens"
+      colNop=1;      // N° Vinistoria
+      colType=3;     // FAF/AFA
+      colFaf=4;      // N° facture
+      colDate=5;     // Date
+      colClient=8;   // Tiers (nom client)
+      colTaux=20;    // Taux %
+      colComm=25;    // Commission à payer
+      break;
+    }
+  }
+  if(dataStart<0)throw new Error('Format XLS non reconnu — en-tête introuvable');
+  
+  // Parser les lignes et regrouper par N° VINOM
+  const entries={};
+  for(let i=dataStart;i<data.length;i++){
+    const row=data[i];
+    const type=String(row[colType]||'').trim();
+    if(!['FAF','AFA','FAV'].includes(type))continue;
+    
+    const nopRaw=String(row[colNop]||'').trim().replace(/^C\s*/i,'').replace(/\s+/g,'');
+    const nfaf=String(row[colFaf]||'').trim().split('.')[0];
+    const client=String(row[colClient]||'').trim();
+    const dateVal=row[colDate];
+    let dateStr='';
+    if(dateVal instanceof Date)dateStr=dateVal.toLocaleDateString('fr-FR');
+    else if(typeof dateVal==='number'){
+      // Serial Excel
+      const d=new Date(Math.round((dateVal-25569)*86400000));
+      dateStr=d.toLocaleDateString('fr-FR');
+    }else dateStr=String(dateVal||'').trim();
+    const taux=parseFloat(row[colTaux])||0;
+    const comm=parseFloat(row[colComm])||0;
+    
+    if(!client||/^vinom$/i.test(client))continue;
+    
+    const isVinomNop=nopRaw&&/^\d{7,8}$/.test(nopRaw);
+    const key=isVinomNop?nopRaw:`FAF${nfaf}`;
+    
+    if(!entries[key]){
+      entries[key]={
+        fournisseur,agence,agent_pdf:'',
+        client,date:dateStr,
+        n_piece:isVinomNop?nopRaw:nfaf,
+        montant_ht:0,taux,
+        commission_ht:0,statut_paiement:'PAYEE'
+      };
+    }
+    entries[key].commission_ht=Math.round((entries[key].commission_ht+comm)*100)/100;
+  }
+  
+  // Calculer montant_ht depuis commission et taux
+  return Object.values(entries).map(e=>{
+    if(e.taux>0)e.montant_ht=Math.round(e.commission_ht/e.taux*100*100)/100;
+    return e;
+  });
+}
+
+
 async function run(){
   const btn=document.getElementById('btn-g');
   btn.disabled=true;btn.innerHTML='<span class="sp"></span> Traitement…';
@@ -745,7 +854,16 @@ async function run(){
     const allComms=[],warns=[];
     for(let i=0;i<pdfs.length;i++){
       const f=pdfs[i];ss(`Extraction ${i+1}/${pdfs.length}: ${f.name}`,'p');sp(10+Math.round(i/pdfs.length*60));
-      try{const b=await rb64(f);const cx=await extractPdf(b,f.name);cx.forEach(c=>allComms.push({...c,_src:f.name}));}
+      try{
+        let cx;
+        if(/\.xls[x]?$/i.test(f.name)){
+          cx=await extractXls(f);
+        }else{
+          const b=await rb64(f);
+          cx=await extractPdf(b,f.name);
+        }
+        cx.forEach(c=>allComms.push({...c,_src:f.name}));
+      }
       catch(e){warns.push(`${f.name}: ${e.message}`);}
     }
     sp(75);ss('Rapprochement…','p');
@@ -795,7 +913,7 @@ async function run(){
 
     const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
     allComms.forEach(comm=>{
-      const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht);
+      const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht,comm.n_piece);
       // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
       // Priorité : agent extrait du PDF (RAFFINVINI/scans), sinon Vinistoria
       const agent=comm.agent_pdf&&comm.agent_pdf.trim()
