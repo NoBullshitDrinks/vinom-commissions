@@ -833,8 +833,9 @@ async function extractXls(file){
     return d.toLocaleDateString('fr-FR');
   }
 
-  // Parser et regrouper par N° VINOM
+  // Parser et regrouper par N° VINOM — conserver l'ordre d'apparition
   const entries={};
+  const entryOrder=[]; // pour conserver l'ordre du fichier
   let countParsed=0;
   for(let i=dataStart;i<data.length;i++){
     const row=data[i];
@@ -868,13 +869,14 @@ async function extractXls(file){
         montant_ht:0,taux,
         commission_ht:0,statut_paiement:'PAYEE'
       };
+      entryOrder.push(key);
     }
     entries[key].commission_ht=Math.round((entries[key].commission_ht+comm)*100)/100;
   }
   console.log('[XLS] Lignes FAF parsées:', countParsed, '| Entrées uniques:', Object.keys(entries).length);
 
   // Calculer montant_ht depuis commission et taux
-  const result=Object.values(entries).map(e=>{
+  const result=entryOrder.map(k=>entries[k]).map(e=>{
     if(e.taux>0)e.montant_ht=Math.round(e.commission_ht/e.taux*100*100)/100;
     return e;
   });
