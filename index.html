@@ -232,6 +232,7 @@ const PROXY_URL = 'https://orange-math-f9f5.lecoindalex.workers.dev';
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let pdfs=[], lastRows=[];
 let vinoRows=null, fournMap=null;
+let resultRows=[]; // résultats du dernier rapprochement
 let meta={vino:null,fourn:null};
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
@@ -423,8 +424,8 @@ function sim(a,b){
   return Math.min(1, Math.max(wordSim, charSim) + bonus);
 }
 function cliSim(pdf,n1,rs){
-  // Similarité CLIENT — basée uniquement sur les mots significatifs (>2 chars)
-  // Pas de char_sim : évite les faux positifs entre noms sans rapport
+  // Similarité CLIENT — trois méthodes combinées
+  // 1. Mots significatifs (Jaccard)
   function wordSim(a,b){
     const na=norm(a),nb=norm(b);
     if(!na||!nb)return 0;
@@ -437,8 +438,30 @@ function cliSim(pdf,n1,rs){
     const bonus=(na.includes(nb)||nb.includes(na))?0.20:0;
     return Math.min(1,ws+bonus);
   }
-  const s1=wordSim(pdf,n1);
-  const s2=rs?wordSim(pdf,rs):0;
+  // 2. Containment sans espaces (noms collés vs séparés)
+  function containSim(a,b){
+    const na=norm(a).replace(/ /g,''),nb=norm(b).replace(/ /g,'');
+    if(!na||!nb)return 0;
+    if(na===nb)return 1;
+    if(na.includes(nb)||nb.includes(na))return 0.75;
+    return 0;
+  }
+  // 3. Trigrammes (similarité partielle pour noms légèrement différents)
+  function ngramSim(a,b,n=3){
+    const na=norm(a).replace(/ /g,''),nb=norm(b).replace(/ /g,'');
+    if(na.length<n||nb.length<n)return 0;
+    const ga=new Set(),gb=new Set();
+    for(let i=0;i<=na.length-n;i++)ga.add(na.slice(i,i+n));
+    for(let i=0;i<=nb.length-n;i++)gb.add(nb.slice(i,i+n));
+    let inter=0;for(const g of ga)if(gb.has(g))inter++;
+    const union=new Set([...ga,...gb]).size;
+    return inter/union;
+  }
+  function best(a,b){
+    return Math.max(wordSim(a,b),containSim(a,b),ngramSim(a,b,3)*0.85);
+  }
+  const s1=best(pdf,n1);
+  const s2=rs?best(pdf,rs):0;
   return Math.max(s1,s2);
 }
 
@@ -965,7 +988,7 @@ async function run(){
     });
     // ────────────────────────────────────────────────────────────────────────
 
-    const resultRows=[],stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
+    resultRows=[];const stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht,comm.n_piece);
       // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
