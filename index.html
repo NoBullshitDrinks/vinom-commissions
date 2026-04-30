@@ -359,18 +359,24 @@ async function loadFourn(f){
   const wb=await rxls(f);const ws=wb.Sheets[wb.SheetNames[0]];
   const data=XLSX.utils.sheet_to_json(ws,{header:1});
   const h=data[0].map(x=>String(x||'').trim());
+  // Format 1 (xlsx VINOM): colonnes "N° Fourn." et "Nom 1"
+  // Format 2 (xls Vinistoria): col0=code, col1=nom commercial (headers=Colonne1,Colonne2...)
   const iC=h.indexOf('N° Fourn.'),iN=h.indexOf('Nom 1');
-  if(iC<0||iN<0)throw new Error('Colonnes N° Fourn. ou Nom 1 introuvables');
+  const useVinistoriaFormat=(iC<0||iN<0);
   const entries=[];
   for(let i=1;i<data.length;i++){
-    const code=parseInt(data[i][iC]),nom=String(data[i][iN]||'').trim();
-    if(!isNaN(code)&&nom)entries.push([code,nom]);
+    let code,nom;
+    if(useVinistoriaFormat){
+      code=parseInt(data[i][0]);
+      nom=String(data[i][1]||'').trim();
+    }else{
+      code=parseInt(data[i][iC]);
+      nom=String(data[i][iN]||'').trim();
+    }
+    if(!isNaN(code)&&nom&&nom.length>1&&!/^colonne/i.test(nom))
+      entries.push([code,nom]);
   }
   fournMap=new Map(entries);
-  meta.fourn={name:f.name,date:new Date().toLocaleDateString('fr-FR'),count:entries.length};
-  sc(K.f,entries);sc(K.m,meta);
-  ss(`Fournisseurs: ${entries.length} entrées`,'ok');renderRef();chk();
-}
 
 // ── DROP ZONES ────────────────────────────────────────────────────────────────
 function rmPdf(i){pdfs.splice(i,1);renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();}
@@ -611,7 +617,7 @@ Règles :
 - agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
 - client : nom exact. Remplacer apostrophes typographiques par un espace.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
-- n_piece : numéro de commande VINOM en PRIORITÉ s'il est présent sur la ligne (ex: "C26000437", "C26001036", "25012897" — commence par C ou est un nombre à 8 chiffres). Si absent, utiliser le numéro de facture fournisseur (ex: "FA287660"). Le N° commande VINOM est souvent sur la même ligne que le N° facture fournisseur : ex "FA287660 C26000437 C26000437" → n_piece="C26000437".
+- n_piece : numéro de commande VINOM en PRIORITÉ. Le chercher dans cet ordre : (1) colonne "NUMERO CMD CLT" ou "NUMERO CMD" si elle existe (ex: "C25005878" → n_piece="25005878"), (2) sur la même ligne que le N° facture fournisseur (ex: "FA287660 C26000437" → n_piece="26000437"), (3) sinon numéro de facture fournisseur. Format N° VINOM : commence par C ou est un nombre à 7-8 chiffres.
 - montant_ht : TOTAL HT de la facture entière (pas par article). RÈGLE CRITIQUE : une seule valeur par facture = le sous-total HT qui apparaît en bas de chaque bloc facture (ligne avec uniquement un montant suivi de tirets, ex: "343,80 |------"). Ne JAMAIS utiliser le montant TTC ni décomposer par produit. Si la facture FA287662 contient les lignes produits 276.00 + 67.80 et affiche "343,80" en sous-total → montant_ht = 343.80. Peut être négatif.
 - taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float pour la facture entière, même si NON PAYEE. Peut être négatif.
@@ -1032,6 +1038,11 @@ function renderStats(s){
 
 // ── EXPORTS ────────────────────────────────────────────────────────────────────
 function dlCSV(){
+  // Trier resultRows par agent puis par client
+  resultRows.sort((a,b)=>{
+    const ag=(a.agent||'—').localeCompare(b.agent||'—');
+    return ag!==0?ag:(a.client||'').localeCompare(b.client||'');
+  });
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const h=['Fournisseur','Agence','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
   const lines=[h.join(';')];
