@@ -520,7 +520,7 @@ function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
   if(dateStr){const p=dateStr.split('/');if(p.length===3)datePdf=new Date(+p[2],+p[1]-1,+p[0]);if(datePdf&&isNaN(datePdf.getTime()))datePdf=null;}
 
   // Cas spéciaux : comptes internes VINOM — ne pas matcher
-  if(/VINOM|BUREAU VINOM/i.test(client))
+  if(/^VINOM\b|\bBUREAU VINOM\b/i.test(client))
     return{candidates:[],status:'CLIENT INCONNU — Compte bureau VINOM'};
 
   // FILTRE 0 — match direct par N° Opération VINOM si n_piece le contient
@@ -640,10 +640,10 @@ const EXTRACT_PROMPT=`Tu reçois un relevé de commissions fournisseur. Extrais 
 [{"fournisseur":"...","agence":"...","agent_pdf":"...","client":"...","date":"DD/MM/YYYY","n_piece":"...","montant_ht":123.45,"taux":15.0,"commission_ht":18.52,"statut_paiement":"PAYEE"}]
 
 Règles :
-- fournisseur : nom de l'entreprise qui ÉMET le document (logo + adresse en haut à gauche ou en haut au centre). Ex: "PAUL JABOULET AINE", "LES VINS AUJOUX", "RAFFIN VINI", "SCA CHATEAU LA LAGUNE". RÈGLE ABSOLUE : ne JAMAIS mettre "VINOM", "VINOM SARL", "VINOM SAS" ou toute variante de VINOM dans ce champ — VINOM est toujours le destinataire, jamais l'émetteur. De même ne jamais mettre une adresse postale ou un nom de représentant dans ce champ.
+- fournisseur : nom de la société qui ÉMET le document. Chercher le champ "Société" ou "Société :" dans l'en-tête (ex: "Société ........: BOISSET" → fournisseur="BOISSET"). Ne JAMAIS utiliser le champ "Nom agent", "Agent", "Représentant" ou l'adresse — ce sont des intermédiaires, pas le fournisseur. Autres exemples: "PAUL JABOULET AINE", "LES VINS AUJOUX", "LA CHABLISIENNE". RÈGLE ABSOLUE : ne JAMAIS mettre "VINOM" ou variante dans ce champ.
 - agence : nom de l'agence commerciale mentionnée dans l'en-tête (ex: "Représentant : 0087 AGENCE LES GOUTTES JY ROMAIN" → "LES GOUTTES", "Représentant : 545 VINOM" → "VINOM", "Représentant : CVC" → "CVC"). Si non mentionné, laisser vide.
 - agent_pdf : uniquement si le document est un relevé par représentant individuel (ex: "Représentant : 81 MICHELE LELLA" → "MICHELE LELLA", "Représentant : 87 ALEXIS DURAND" → "ALEXIS DURAND"). Si le représentant est une société (ex: "Représentant : 545 VINOM" ou "Employé : 0185 VINOM SARL"), mettre "" car l'agent sera déterminé par ligne dans Vinistoria.
-- client : nom exact. Remplacer apostrophes typographiques par un espace.
+- client : nom du client en clair. Pour les relevés Boisset où la colonne s'appelle "CODE CLT ADRESSE" (ex: "XC151437 A0160081 MARGOT"), extraire uniquement le nom = les mots après les codes alphanumériques (ex: "MARGOT", "VINOMANCIE", "BAZAFRED", "AUPTITBOUCHO", "HIPPOCAMPE"). Ignorer les codes XC... et A0.... Pour tous les autres formats, prendre le nom exact du client. Remplacer apostrophes typographiques par une apostrophe simple.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
 - n_piece : numéro de commande VINOM en PRIORITÉ. Le chercher dans cet ordre : (1) colonne "NUMERO CMD CLT" ou "NUMERO CMD" si elle existe (ex: "C25005878" → n_piece="25005878"), (2) sur la même ligne que le N° facture fournisseur (ex: "FA287660 C26000437" → n_piece="26000437"), (3) sinon numéro de facture fournisseur. Format N° VINOM : commence par C ou est un nombre à 7-8 chiffres.
 - montant_ht : TOTAL HT de la facture entière (pas par article). RÈGLE CRITIQUE : une seule valeur par facture = le sous-total HT qui apparaît en bas de chaque bloc facture (ligne avec uniquement un montant suivi de tirets, ex: "343,80 |------"). Ne JAMAIS utiliser le montant TTC ni décomposer par produit. Si la facture FA287662 contient les lignes produits 276.00 + 67.80 et affiche "343,80" en sous-total → montant_ht = 343.80. Peut être négatif.
