@@ -377,6 +377,11 @@ async function loadFourn(f){
       entries.push([code,nom]);
   }
   fournMap=new Map(entries);
+  meta.fourn={name:f.name,date:new Date().toLocaleDateString('fr-FR')};
+  sc(K.f,[...fournMap.entries()]);sc(K.m,meta);
+  renderRef();chk();
+  ss('Fournisseurs chargés — '+fournMap.size+' références.','ok');
+}
 
 // ── DROP ZONES ────────────────────────────────────────────────────────────────
 function rmPdf(i){pdfs.splice(i,1);renderFL('fl-pdf',pdfs,'rmPdf');document.getElementById('dz-pdf').classList.toggle('has-files',pdfs.length>0);chk();}
