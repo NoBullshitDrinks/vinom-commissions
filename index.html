@@ -1002,6 +1002,12 @@ async function run(){
       else stats['AUCUN']++;
       resultRows.push({comm:{...comm,agent},candidates,status});
     });
+    // Trier par agent puis par client
+    resultRows.sort((a,b)=>{
+      const ag=(a.comm.agent||'—').localeCompare(b.comm.agent||'—');
+      if(ag!==0)return ag;
+      return (a.comm.client||'').localeCompare(b.comm.client||'');
+    });
     sp(90);lastRows=resultRows;renderTable(resultRows,q,y);renderStats(stats);
     if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('wa').appendChild(box);}
     sp(100);setTimeout(()=>sp(0),600);
@@ -1066,11 +1072,6 @@ function renderStats(s){
 
 // ── EXPORTS ────────────────────────────────────────────────────────────────────
 function dlCSV(){
-  // Trier resultRows par agent puis par client
-  resultRows.sort((a,b)=>{
-    const ag=(a.agent||'—').localeCompare(b.agent||'—');
-    return ag!==0?ag:(a.client||'').localeCompare(b.client||'');
-  });
   const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const h=['Fournisseur','Agence','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
   const lines=[h.join(';')];
