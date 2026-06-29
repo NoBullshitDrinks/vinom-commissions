@@ -332,6 +332,9 @@ async function loadVino(f){
   const iRs=fc(['Rais. Soc.']);
   const iMt=fc(['TOTAL HT (€)','TOTAL HT']);
   const iDt=fc(['Date Création','Date Creation']);
+  const iNl=fc(['Nom Livraison']);
+  const iEns=fc(['Enseigne']);
+  const iNcli=fc(['N° de Client','N° Client']);
   const rows=[];
   for(let i=1;i<data.length;i++){
     const r=data[i];
@@ -340,13 +343,16 @@ async function loadVino(f){
     const ag=String(r[iAg]||'').trim();
     const n1=String(r[iN1]||'').toUpperCase().trim();
     const rs=String(r[iRs]||'').toUpperCase().trim();
+    const nl=iNl>=0?String(r[iNl]||'').toUpperCase().trim():'';
+    const ens=iEns>=0?String(r[iEns]||'').toUpperCase().trim():'';
+    const ncli=iNcli>=0?r[iNcli]:'';
     let mt=r[iMt];
     if(typeof mt==='string')mt=parseFloat(mt.replace(/[\s\u00A0\u202F\u2009]/g,'').replace(',','.'));else mt=parseFloat(mt);
     let date=r[iDt];
     if(date instanceof Date){if(isNaN(date.getTime())||date.getFullYear()<2020)date=null;}
     else if(typeof date==='string'){date=new Date(date);if(isNaN(date.getTime()))date=null;}
     else date=null;
-    rows.push({nop:parseInt(nop),fc:fc2,ag,n1,rs,mt:isNaN(mt)?null:mt,ds:date?date.toISOString():null});
+    rows.push({nop:parseInt(nop),fc:fc2,ag,n1,rs,nl,ens,ncli,mt:isNaN(mt)?null:mt,ds:date?date.toISOString():null});
   }
   vinoRows=rows.map(r=>({...r,date:r.ds?new Date(r.ds):null}));
   meta.vino={name:f.name,date:new Date().toLocaleDateString('fr-FR'),rows:rows.length};
@@ -513,15 +519,51 @@ function getFournCode(fPdf){
   const r=best?best.code:null;fcCache[k]=r;return r;
 }
 
+// ── REPLI : identification du client par nom → agent (commande non rapprochée) ──
+// Cherche le client sur Nom 1 / Rais. Soc. / Nom Livraison / Enseigne, et n'attribue
+// un agent que s'il est dominant (≥70%) parmi les meilleurs matches → pas de faux positif.
+function _nlen(s){return norm(s).replace(/ /g,'').length;}
+function _clientLookup(client){
+  if(_nlen(client)<4)return null;
+  const matches=[];
+  for(const r of vinoRows){
+    const s=Math.max(cliSim(client,r.n1,r.rs), r.nl?cliSim(client,r.nl,r.ens):0);
+    if(s>=0.75)matches.push({r,s});
+  }
+  if(!matches.length)return null;
+  const maxS=Math.max(...matches.map(m=>m.s));
+  const top=matches.filter(m=>m.s>=maxS-0.051);
+  const agFreq={};let tot=0;
+  top.forEach(m=>{const a=m.r.ag;if(a&&a!=='—'){agFreq[a]=(agFreq[a]||0)+1;tot++;}});
+  if(!tot)return null;
+  const sorted=Object.entries(agFreq).sort((a,b)=>b[1]-a[1]);
+  if(sorted[0][1]/tot<0.70)return null;            // agents éparpillés (mot générique) → rejet
+  const agent=sorted[0][0];
+  const bestC=top.filter(m=>m.r.ag===agent).sort((a,b)=>b.s-a.s)[0];
+  return {agent, ref:bestC.r};
+}
+function clientNameAgent(client){
+  let fb=_clientLookup(client);if(fb)return fb;
+  // 2e passe : libellés composés "Nom commercial - Raison sociale" / "A/B"
+  const parts=String(client).split(/\s[-—/]\s|\//).map(p=>p.trim()).filter(p=>_nlen(p)>=4);
+  for(const p of parts){fb=_clientLookup(p);if(fb)return fb;}
+  return null;
+}
+function clientFallback(client){
+  const fb=clientNameAgent(client);
+  if(fb)return{candidates:[{...fb.ref,ag:fb.agent,score:0,gap:null,_fallback:true}],status:'⚠ CLIENT IDENTIFIÉ — commande non rapprochée'};
+  return{candidates:[],status:'CLIENT INTROUVABLE'};
+}
+
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
 function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
   const isAvoir=montantHt<0,amt=Math.abs(parseFloat(montantHt));
   let datePdf=null;
   if(dateStr){const p=dateStr.split('/');if(p.length===3)datePdf=new Date(+p[2],+p[1]-1,+p[0]);if(datePdf&&isNaN(datePdf.getTime()))datePdf=null;}
 
-  // Cas spéciaux : comptes internes VINOM — ne pas matcher
-  if(/^VINOM\b|\bBUREAU VINOM\b/i.test(client))
-    return{candidates:[],status:'CLIENT INCONNU — Compte bureau VINOM'};
+  // Cas spéciaux : comptes internes VINOM — isolés, à traiter à part (ce n'est pas un client inconnu)
+  if(/^VINOM\b|\bBUREAU VINOM\b|VINOM SAS/i.test(client))
+    return{candidates:[],status:'⊘ COMPTE VINOM — à traiter à part'};
 
   // FILTRE 0 — match direct par N° Opération VINOM si n_piece le contient
   // Format: commence par C suivi de chiffres, ou nombre à 8 chiffres seul
@@ -540,9 +582,9 @@ function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
 
   // FILTRE 1 — fournisseur par code exact
   const fc=getFournCode(fournisseur);
-  if(!fc)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  if(!fc)return clientFallback(client);
   let pool=vinoRows.filter(r=>r.fc===fc);
-  if(!pool.length)return{candidates:[],status:'FOURNISSEUR INCONNU'};
+  if(!pool.length)return clientFallback(client);
 
   // FILTRE 2 — montant ±1% (exact), fallback ±6%, fallback ±20%
   let mtWarn=false;
@@ -578,7 +620,7 @@ function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
   if(poolCliExact.length>0)pool=poolCliExact;
   else if(poolCliGood.length>0)pool=poolCliGood;
   else if(poolCliWeak.length>0){pool=poolCliWeak;} // garder avec avertissement
-  else return{candidates:[],status:'CLIENT INCONNU — absent de Vinistoria'};
+  else return clientFallback(client);
 
   // FILTRE 4 — date: gap = datePdf - dateVino (jours positifs = commande avant facture)
   let dWarn=false;
@@ -1009,7 +1051,7 @@ async function run(){
     });
     // ────────────────────────────────────────────────────────────────────────
 
-    resultRows=[];const stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0};
+    resultRows=[];const stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0,'VINOM':0,'IDENT':0};
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht,comm.n_piece);
       // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
@@ -1017,7 +1059,9 @@ async function run(){
       const agent=comm.agent_pdf&&comm.agent_pdf.trim()
         ?comm.agent_pdf.trim()
         :(candidates.length>0?(candidates[0].ag||'—'):'—');
-      if(status.includes('✓'))stats['✓']++;
+      if(status.includes('COMPTE VINOM'))stats['VINOM']++;
+      else if(status.includes('CLIENT IDENTIFIÉ'))stats['IDENT']++;
+      else if(status.includes('✓'))stats['✓']++;
       else if(status.includes('⚠'))stats['⚠']++;
       else if(status.includes('MULTI'))stats['MULTI']++;
       else stats['AUCUN']++;
@@ -1087,7 +1131,7 @@ function renderTable(rows,q,y){
 }
 function renderStats(s){
   const el=document.getElementById('sr');el.innerHTML='';
-  [{n:s['✓'],l:'Match exact',c:'var(--ok)'},{n:s['⚠'],l:'Écart date',c:'var(--warn)'},{n:s['MULTI'],l:'Multi-candidats',c:'var(--multi)'},{n:s['AUCUN'],l:'Non trouvé',c:'var(--err)'}]
+  [{n:s['✓'],l:'Match exact',c:'var(--ok)'},{n:s['⚠'],l:'Écart date',c:'var(--warn)'},{n:s['IDENT']||0,l:'Client identifié',c:'var(--multi)'},{n:s['MULTI'],l:'Multi-candidats',c:'var(--multi)'},{n:s['VINOM']||0,l:'Compte VINOM',c:'#6E5BA6'},{n:s['AUCUN'],l:'Non trouvé',c:'var(--err)'}]
   .forEach(({n,l,c})=>{const d=document.createElement('div');d.className='sb';d.innerHTML=`<div class="sn" style="color:${c}">${n}</div><div class="sl">${l}</div>`;el.appendChild(d);});
 }
 
