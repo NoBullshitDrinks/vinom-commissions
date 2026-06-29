@@ -699,9 +699,9 @@ function parseJsonResp(t){
 }
 
 // Appel API avec texte brut
-async function callText(text){
+async function callText(text,maxTokens=8000){
   const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,
       messages:[{role:'user',content:[{type:'text',text:EXTRACT_PROMPT+'\n\n---\n\n'+text}]}]})});
   if(!r.ok)throw new Error(`API ${r.status}`);
   const d=await r.json();
@@ -712,7 +712,7 @@ async function callText(text){
 // Appel API avec image JPEG base64 (pour PDF scannés)
 async function callImage(jpegB64){
   const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8000,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:jpegB64}},
         {type:'text',text:EXTRACT_PROMPT}
@@ -783,10 +783,31 @@ async function extractPdf(b64,fn){
 
 // ── RUN ────────────────────────────────────────────────────────────────────────
 // ── EXTRACTION XLS/XLSX (format DEUTZ et similaires) ─────────────────────────
+// Déduit un nom de fournisseur à partir du nom de fichier (relevés internes sans nom fournisseur dans le contenu)
+function fournFromName(fn){
+  let s=fn.replace(/\.[^.]+$/,'').toUpperCase().replace(/[_\-]+/g,' ');
+  s=s.replace(/\b(COM|COMMISSIONS?|RELEVE|RELEVES|VINOM|TRI|TRIMESTRE|[1-4]ER|[1-4]EME|T[1-4]|[1-4]T|JANVIER|FEVRIER|MARS|AVRIL|MAI|JUIN|JUILLET|AOUT|SEPTEMBRE|OCTOBRE|NOVEMBRE|DECEMBRE|20\d{2})\b/g,' ');
+  return s.replace(/\b\d+\b/g,' ').replace(/\s+/g,' ').trim();
+}
+
+// Extraction XLS : 1) format DEUTZ déterministe (rapide, gratuit) ; 2) repli universel via Claude (comme un PDF natif)
 async function extractXls(file){
-  // Lire le fichier
   const buf=await file.arrayBuffer();
   const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false});
+  try{ const det=extractXlsDeutz(wb); if(det&&det.length) return det; }
+  catch(e){ console.log('[XLS] format DEUTZ non reconnu → repli Claude :', e.message); }
+  // Repli : feuille la plus fournie → CSV → extraction Claude
+  let sh=wb.SheetNames[0],best=0;
+  for(const n of wb.SheetNames){const d=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1});if(d.length>best){best=d.length;sh=n;}}
+  const csv=XLSX.utils.sheet_to_csv(wb.Sheets[sh],{FS:';',blankrows:false});
+  const rows=await callText(csv,16000);
+  const fb=fournFromName(file.name);
+  if(fb)rows.forEach(r=>{const f=String(r.fournisseur||'').trim();if(!f||/^vinom/i.test(f))r.fournisseur=fb;});
+  return rows;
+}
+
+// ── Parser déterministe format DEUTZ (et similaires "Type/Tiers/À payer") ────
+function extractXlsDeutz(wb){
   console.log('[XLS] Feuilles:', wb.SheetNames);
   
   const shName=wb.SheetNames.find(n=>/france/i.test(n))||wb.SheetNames[0];
@@ -1011,7 +1032,7 @@ async function run(){
     sp(90);lastRows=resultRows;renderTable(resultRows,q,y);renderStats(stats);
     if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('wa').appendChild(box);}
     sp(100);setTimeout(()=>sp(0),600);
-    ss(`✓ ${allComms.length} lignes traitées — ${q} ${y}`,'ok');
+    ss(allComms.length?`✓ ${allComms.length} lignes traitées — ${q} ${y}`:`⚠ Aucune ligne extraite — voir les points à vérifier ci-dessus`, allComms.length?'ok':'err');
     document.getElementById('res').classList.add('v');
     document.getElementById('plbl').textContent=`${q} ${y}`;
     document.getElementById('rm').textContent=`${allComms.length} lignes · ${new Date().toLocaleDateString('fr-FR')}`;
