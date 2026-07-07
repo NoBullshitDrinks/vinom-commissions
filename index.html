@@ -108,7 +108,7 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 <div class="app">
 <div class="header">
   <div><div class="logo">VINOM <span>×</span> Commissions</div><div class="subtitle">Relevé · Agents · N° Opérations Vinistoria — AAA</div></div>
-  <div class="badge">v2.2 — repli client</div>
+  <div class="badge">v2.3 — agent par client</div>
 </div>
 
 <!-- PDF -->
@@ -120,10 +120,6 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
   </div>
   <input type="file" id="in-pdf" accept=".pdf,.xls,.xlsx" multiple>
   <div class="fl" id="fl-pdf"></div>
-  <div class="pr"><label>Période :</label>
-    <select id="sel-q"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
-    <input type="number" id="inp-y" value="2026" min="2020" max="2035">
-  </div>
 </div>
 
 <!-- FICHIERS FIXES -->
@@ -555,6 +551,42 @@ function clientFallback(client){
   return{candidates:[],status:'CLIENT INTROUVABLE'};
 }
 
+// ── AGENT DÉTERMINISTE : un seul agent par client, calculé une fois ────────────
+// L'agent NE dépend QUE du client (via son historique de commandes Vinistoria),
+// jamais d'un rapprochement de n° de pièce ligne à ligne. Le même client donne
+// donc toujours le même agent (mémoïsation sur le nom normalisé).
+const _agentCache={};
+function _agentForName(client){
+  if(_nlen(client)<4)return null;
+  const matches=[];
+  for(const r of vinoRows){
+    const s=Math.max(cliSim(client,r.n1,r.rs), r.nl?cliSim(client,r.nl,r.ens):0);
+    if(s>=0.75)matches.push({r,s});
+  }
+  if(!matches.length)return null;
+  const maxS=Math.max(...matches.map(m=>m.s));
+  const top=matches.filter(m=>m.s>=maxS-0.051);
+  // agent MAJORITAIRE parmi les meilleures correspondances de CE client → déterministe
+  const freq={};
+  top.forEach(m=>{const a=m.r.ag;if(a&&a!=='—')freq[a]=(freq[a]||0)+1;});
+  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  return sorted.length?sorted[0][0]:null;
+}
+function resolveClientAgent(client){
+  const key=norm(client);
+  if(key in _agentCache)return _agentCache[key];
+  let agent=null;
+  if(/^VINOM\b|BUREAU VINOM|VINOM SAS/i.test(client))agent='VINOM';
+  else{
+    agent=_agentForName(client);
+    if(!agent){ // libellés composés "Nom - Raison sociale" / "A/B"
+      const parts=String(client).split(/\s[-—/]\s|\//).map(p=>p.trim()).filter(p=>_nlen(p)>=4);
+      for(const p of parts){agent=_agentForName(p);if(agent)break;}
+    }
+  }
+  _agentCache[key]=agent;return agent;
+}
+
 // ── RAPPROCHEMENT ─────────────────────────────────────────────────────────────
 function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
   const isAvoir=montantHt<0,amt=Math.abs(parseFloat(montantHt));
@@ -573,10 +605,14 @@ function matchComm(fournisseur,client,dateStr,montantHt,nPiece){
     const directMatch=vinoRows.find(r=>r.nop===nopNum);
     if(directMatch){
       const score=cliSim(client,directMatch.n1,directMatch.rs);
-      // Accepter même avec score faible si le N° correspond exactement
       const gap=datePdf?Math.round((datePdf-directMatch.date)/86400000):null;
-      const status=gap!==null&&Math.abs(gap)>30?'⚠ MATCH PAR N° VINOM — ÉCART DATE':'✓ MATCH PAR N° VINOM';
-      return{candidates:[{...directMatch,score:score>=0?score:0.5,gap}],status};
+      // GARDE ANTI-COLLISION : n'accepter le match par n° QUE si le client concorde
+      // OU si l'écart de date est faible. Sinon c'est une collision de numérotation
+      // (le n° de pièce du fournisseur ≠ n° de commande VINOM), on ignore ce faux match.
+      if(score>=0.55||(gap!==null&&Math.abs(gap)<=45)){
+        const status=gap!==null&&Math.abs(gap)>30?'⚠ MATCH PAR N° VINOM — ÉCART DATE':'✓ MATCH PAR N° VINOM';
+        return{candidates:[{...directMatch,score:score>=0?score:0.5,gap}],status};
+      }
     }
   }
 
@@ -987,7 +1023,7 @@ async function run(){
   btn.disabled=true;btn.innerHTML='<span class="sp"></span> Traitement…';
   document.getElementById('res').classList.remove('v');
   document.getElementById('wa').innerHTML='';sp(5);
-  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
+  Object.keys(_agentCache).forEach(k=>delete _agentCache[k]);
   Object.keys(fcCache).forEach(k=>delete fcCache[k]);
   vinoCountByCode=null;
   try{
@@ -1054,11 +1090,11 @@ async function run(){
     resultRows=[];const stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0,'VINOM':0,'IDENT':0};
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht,comm.n_piece);
-      // Agent pris depuis Vinistoria (meilleur candidat), pas depuis un fichier externe
-      // Priorité : agent extrait du PDF (RAFFINVINI/scans), sinon Vinistoria
+      // AGENT = déterminé par le CLIENT (déterministe, mémoïsé), PAS par le candidat rapproché.
+      // Priorité : agent nommé sur un relevé par représentant (agent_pdf), sinon résolution client.
       const agent=comm.agent_pdf&&comm.agent_pdf.trim()
         ?comm.agent_pdf.trim()
-        :(candidates.length>0?(candidates[0].ag||'—'):'—');
+        :(status.includes('COMPTE VINOM')?'VINOM':(resolveClientAgent(comm.client)||'—'));
       if(status.includes('COMPTE VINOM'))stats['VINOM']++;
       else if(status.includes('CLIENT IDENTIFIÉ'))stats['IDENT']++;
       else if(status.includes('✓'))stats['✓']++;
@@ -1073,12 +1109,12 @@ async function run(){
       if(ag!==0)return ag;
       return (a.comm.client||'').localeCompare(b.comm.client||'');
     });
-    sp(90);lastRows=resultRows;renderTable(resultRows,q,y);renderStats(stats);
+    sp(90);lastRows=resultRows;renderTable(resultRows);renderStats(stats);
     if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('wa').appendChild(box);}
     sp(100);setTimeout(()=>sp(0),600);
-    ss(allComms.length?`✓ ${allComms.length} lignes traitées — ${q} ${y}`:`⚠ Aucune ligne extraite — voir les points à vérifier ci-dessus`, allComms.length?'ok':'err');
+    ss(allComms.length?`✓ ${allComms.length} lignes traitées`:`⚠ Aucune ligne extraite — voir les points à vérifier ci-dessus`, allComms.length?'ok':'err');
     document.getElementById('res').classList.add('v');
-    document.getElementById('plbl').textContent=`${q} ${y}`;
+    document.getElementById('plbl').textContent=new Date().toLocaleDateString('fr-FR');
     document.getElementById('rm').textContent=`${allComms.length} lignes · ${new Date().toLocaleDateString('fr-FR')}`;
   }catch(e){ss('Erreur: '+e.message,'err');sp(0);}
   btn.disabled=false;btn.innerHTML='<span>⚡</span> Générer';
@@ -1089,10 +1125,14 @@ const CL=['#6B1A2A','#C9973A','#2E7D4F','#1A478A','#7B3FA0','#B05C00'];
 const CM={};let CI=0;
 function gc(n){if(!CM[n])CM[n]=CL[CI++%CL.length];return CM[n];}
 
-function renderTable(rows,q,y){
+function renderTable(rows){
   const tbody=document.getElementById('tb'),tfoot=document.getElementById('tf');
   tbody.innerHTML='';tfoot.innerHTML='';let tHT=0,tCom=0;
+  const perFourn={};let curAgent=null,aHT=0,aCom=0,aN=0;
+  const agentSub=(ag)=>{const tr=document.createElement('tr');tr.style.cssText='background:#EFE7D8';tr.innerHTML=`<td colspan="6" style="text-align:right;padding-right:10px;font-weight:700">SOUS-TOTAL ${ag||'—'} · ${aN} ligne(s)</td><td class="nu" style="font-weight:700">${fmt(aHT)} €</td><td></td><td class="nu" style="color:var(--ok);font-weight:700">${fmt(aCom)} €</td><td colspan="6"></td>`;tbody.appendChild(tr);};
   rows.forEach(({comm,candidates,status})=>{
+    if(curAgent!==null&&comm.agent!==curAgent){agentSub(curAgent);aHT=0;aCom=0;aN=0;}
+    curAgent=comm.agent;
     const isAvoir=comm.montant_ht<0;
     const isPaid=comm.statut_paiement&&!comm.statut_paiement.includes('NON');
     let bg,pc;
@@ -1119,15 +1159,18 @@ function renderTable(rows,q,y){
       <td class="ct">${c.gap!=null?c.gap+'j':'—'}</td>
       <td><span class="pill ${pc}">${status}</span></td>`;
     tbody.appendChild(tr);tHT+=comm.montant_ht||0;tCom+=comm.commission_ht||0;
+    aHT+=comm.montant_ht||0;aCom+=comm.commission_ht||0;aN++;perFourn[comm.fournisseur]=(perFourn[comm.fournisseur]||0)+(comm.commission_ht||0);
     candidates.slice(1).forEach((cc,ci)=>{
       const tr2=document.createElement('tr');tr2.className='cand';
       tr2.innerHTML=`<td colspan="9"></td><td class="mo" style="color:#aaa;font-style:italic">↳ candidat ${ci+2}: ${cc.nop||'—'}</td><td class="ct">${cc.date?cc.date.toLocaleDateString('fr-FR'):'—'}</td><td class="nu">${fmt(cc.mt)}</td><td class="ct">${cc.gap!=null?cc.gap+'j':'—'}</td><td></td>`;
       tbody.appendChild(tr2);
     });
   });
+  if(curAgent!==null)agentSub(curAgent);
   const tf=document.createElement('tr');
-  tf.innerHTML=`<td colspan="5" style="text-align:right;padding-right:10px">TOTAL ${q} ${y}</td><td class="nu">${fmt(tHT)} €</td><td></td><td class="nu" style="color:var(--ok)">${fmt(tCom)} €</td><td colspan="6"></td>`;
+  tf.innerHTML=`<td colspan="6" style="text-align:right;padding-right:10px;font-weight:800">TOTAL GÉNÉRAL</td><td class="nu" style="font-weight:800">${fmt(tHT)} €</td><td></td><td class="nu" style="color:var(--ok);font-weight:800">${fmt(tCom)} €</td><td colspan="6"></td>`;
   tfoot.appendChild(tf);
+  Object.entries(perFourn).sort((a,b)=>b[1]-a[1]).forEach(([f,v])=>{const tr=document.createElement('tr');tr.innerHTML=`<td colspan="8" style="text-align:right;padding-right:10px;color:var(--muted);font-size:11px">↳ Total commission « ${f} » (à rapprocher du total du relevé fournisseur)</td><td class="nu" style="color:var(--muted)">${fmt(v)} €</td><td colspan="6"></td>`;tfoot.appendChild(tr);});
 }
 function renderStats(s){
   const el=document.getElementById('sr');el.innerHTML='';
@@ -1136,30 +1179,57 @@ function renderStats(s){
 }
 
 // ── EXPORTS ────────────────────────────────────────────────────────────────────
+function _stamp(){return new Date().toISOString().slice(0,10).replace(/-/g,'');}
+function _byAgent(){const m={};lastRows.forEach(({comm})=>{const a=comm.agent||'—';if(!m[a])m[a]={n:0,ht:0,com:0};m[a].n++;m[a].ht+=comm.montant_ht||0;m[a].com+=comm.commission_ht||0;});return m;}
+function _byFourn(){const m={};lastRows.forEach(({comm})=>{const f=comm.fournisseur||'—';if(!m[f])m[f]={n:0,com:0};m[f].n++;m[f].com+=comm.commission_ht||0;});return m;}
 function dlCSV(){
-  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
-  const h=['Fournisseur','Agence','Client','Agent','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
+  const h=['Agent','Fournisseur','Client','Date facture','N° Pièce','Montant HT','Taux','Commission HT','Paiement','N° Op VINOM','Date commande','Montant VINOM','Écart (j)','Statut rapprochement'];
   const lines=[h.join(';')];
-  lastRows.forEach(({comm,candidates,status})=>{const c=candidates[0]||{};lines.push([comm.fournisseur,comm.agence||"",comm.client,comm.agent,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.mt||'').replace('.',','),c.gap!=null?c.gap:'',status].join(';'));});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Commissions_${q}${y}_VINOM.csv`;a.click();
+  let curA=null,sHT=0,sCom=0,sN=0,tHT=0,tCom=0;
+  const flush=()=>{if(curA!==null)lines.push([`SOUS-TOTAL ${curA} (${sN} l.)`,'','','','',String(sHT.toFixed(2)).replace('.',','),'',String(sCom.toFixed(2)).replace('.',','),'','','','','',''].join(';'));};
+  lastRows.forEach(({comm,candidates,status})=>{
+    if(curA!==null&&comm.agent!==curA){flush();sHT=0;sCom=0;sN=0;}
+    curA=comm.agent;const c=candidates[0]||{};
+    lines.push([comm.agent||'—',comm.fournisseur,comm.client,comm.date,comm.n_piece,String(comm.montant_ht).replace('.',','),comm.taux,String(comm.commission_ht).replace('.',','),comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',String(c.mt||'').replace('.',','),c.gap!=null?c.gap:'',status].join(';'));
+    sHT+=comm.montant_ht||0;sCom+=comm.commission_ht||0;sN++;tHT+=comm.montant_ht||0;tCom+=comm.commission_ht||0;
+  });
+  flush();
+  lines.push(['TOTAL GÉNÉRAL','','','','',String(tHT.toFixed(2)).replace('.',','),'',String(tCom.toFixed(2)).replace('.',','),'','','','','',''].join(';'));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Commissions_VINOM_${_stamp()}.csv`;a.click();
 }
 function dlXLSX(){
-  const q=document.getElementById('sel-q').value,y=document.getElementById('inp-y').value;
   const wb=XLSX.utils.book_new();
-  const h=['Fournisseur','Client','Agent','Date facture','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)','Statut paiement','N° Op. VINOM','Date commande VINOM','Montant VINOM (€)','Écart (j)','Statut rapprochement'];
-  const data=[];
+  // ── Feuille 1 : Détail par agent (sous-totaux + total général) ──
+  const h=['Agent','Fournisseur','Client','Date facture','N° Pièce','Montant HT (€)','Taux (%)','Commission HT (€)','Statut paiement','N° Op. VINOM','Date commande VINOM','Montant VINOM (€)','Écart (j)','Statut rapprochement'];
+  const data=[];let curA=null,sHT=0,sCom=0,sN=0,tHT=0,tCom=0;
+  const subRow=()=>{if(curA!==null)data.push([`SOUS-TOTAL ${curA} — ${sN} ligne(s)`,'','','','',Math.round(sHT*100)/100,'',Math.round(sCom*100)/100,'','','','','','']);};
   lastRows.forEach(({comm,candidates,status})=>{
-    const c=candidates[0]||{};
-    data.push([comm.fournisseur,comm.agence||"",comm.client,comm.agent,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.mt||'',c.gap!=null?c.gap:'',status]);
+    if(curA!==null&&comm.agent!==curA){subRow();sHT=0;sCom=0;sN=0;}
+    curA=comm.agent;const c=candidates[0]||{};
+    data.push([comm.agent||'—',comm.fournisseur,comm.client,comm.date,comm.n_piece,comm.montant_ht,comm.taux,comm.commission_ht,comm.statut_paiement||'',c.nop||'',c.date?c.date.toLocaleDateString('fr-FR'):'',c.mt||'',c.gap!=null?c.gap:'',status]);
     candidates.slice(1).forEach((cc,ci)=>data.push(['','','','','','','','','',cc.nop||'',cc.date?cc.date.toLocaleDateString('fr-FR'):'',cc.mt||'',cc.gap!=null?cc.gap:'',`↳ candidat ${ci+2}`]));
+    sHT+=comm.montant_ht||0;sCom+=comm.commission_ht||0;sN++;tHT+=comm.montant_ht||0;tCom+=comm.commission_ht||0;
   });
-  const tHT=lastRows.reduce((s,{comm})=>s+(comm.montant_ht||0),0);
-  const tCom=lastRows.reduce((s,{comm})=>s+(comm.commission_ht||0),0);
-  data.push(['','','','',`TOTAL ${q} ${y}`,tHT,'',tCom,'','','','','','']);
+  subRow();
+  data.push([]);
+  data.push(['TOTAL GÉNÉRAL','','','','',Math.round(tHT*100)/100,'',Math.round(tCom*100)/100,'','','','','','']);
   const ws=XLSX.utils.aoa_to_sheet([h,...data]);
-  ws['!cols']=[22,22,12,12,14,12,7,14,10,16,16,12,8,26].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb,ws,`Commissions ${q} ${y}`);
-  XLSX.writeFile(wb,`Commissions_${q}${y}_VINOM.xlsx`);
+  ws['!cols']=[10,22,26,12,14,13,7,15,12,16,16,13,8,26].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Détail par agent');
+  // ── Feuille 2 : Synthèse par agent ──
+  const A=_byAgent();const total=Object.values(A).reduce((s,v)=>s+v.com,0)||1;
+  const a2=[['Agent','Nb lignes','Montant HT (€)','Commission (€)','% du total']];
+  Object.entries(A).sort((x,y)=>y[1].com-x[1].com).forEach(([k,v])=>a2.push([k,v.n,Math.round(v.ht*100)/100,Math.round(v.com*100)/100,Math.round(v.com/total*1000)/10+' %']));
+  a2.push(['TOTAL',lastRows.length,Math.round(tHT*100)/100,Math.round(tCom*100)/100,'100 %']);
+  const ws2=XLSX.utils.aoa_to_sheet(a2);ws2['!cols']=[12,10,15,15,10].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Synthèse par agent');
+  // ── Feuille 3 : Synthèse par fournisseur (à rapprocher des relevés) ──
+  const Fm=_byFourn();
+  const a3=[['Fournisseur','Nb lignes','Commission calculée (€)','Total relevé fournisseur (€)','Écart (€)']];
+  Object.entries(Fm).sort((x,y)=>y[1].com-x[1].com).forEach(([k,v])=>a3.push([k,v.n,Math.round(v.com*100)/100,'','← à saisir depuis le relevé']));
+  const ws3=XLSX.utils.aoa_to_sheet(a3);ws3['!cols']=[24,10,20,22,24].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws3,'Synthèse fournisseurs');
+  XLSX.writeFile(wb,`Commissions_VINOM_${_stamp()}.xlsx`);
 }
 </script>
 </body>
