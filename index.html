@@ -108,7 +108,7 @@ hr.dv{border:none;border-top:1.5px solid var(--cream2);margin:16px 0}
 <div class="app">
 <div class="header">
   <div><div class="logo">VINOM <span>×</span> Commissions</div><div class="subtitle">Relevé · Agents · N° Opérations Vinistoria — AAA</div></div>
-  <div class="badge">v2.3 — agent par client</div>
+  <div class="badge">v2.4 — agent par client + contrôle total</div>
 </div>
 
 <!-- PDF -->
@@ -229,6 +229,7 @@ const PROXY_URL = 'https://orange-math-f9f5.lecoindalex.workers.dev';
 let pdfs=[], lastRows=[];
 let vinoRows=null, fournMap=null;
 let resultRows=[]; // résultats du dernier rapprochement
+let declaredTotals={}; // totaux commissions imprimés sur les relevés (contrôle)
 let meta={vino:null,fourn:null};
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
@@ -724,12 +725,13 @@ Règles :
 - client : nom du client en clair. Pour les relevés Boisset où la colonne s'appelle "CODE CLT ADRESSE" (ex: "XC151437 A0160081 MARGOT"), extraire uniquement le nom = les mots après les codes alphanumériques (ex: "MARGOT", "VINOMANCIE", "BAZAFRED", "AUPTITBOUCHO", "HIPPOCAMPE"). Ignorer les codes XC... et A0.... Pour tous les autres formats, prendre le nom exact du client. Remplacer apostrophes typographiques par une apostrophe simple.
 - date : DD/MM/YYYY. Format américain M/D/YYYY → convertir.
 - n_piece : numéro de commande VINOM en PRIORITÉ. Le chercher dans cet ordre : (1) colonne "NUMERO CMD CLT" ou "NUMERO CMD" si elle existe (ex: "C25005878" → n_piece="25005878"), (2) sur la même ligne que le N° facture fournisseur (ex: "FA287660 C26000437" → n_piece="26000437"), (3) sinon numéro de facture fournisseur. Format N° VINOM : commence par C ou est un nombre à 7-8 chiffres.
-- montant_ht : TOTAL HT de la facture entière (pas par article). RÈGLE CRITIQUE : une seule valeur par facture = le sous-total HT qui apparaît en bas de chaque bloc facture (ligne avec uniquement un montant suivi de tirets, ex: "343,80 |------"). Ne JAMAIS utiliser le montant TTC ni décomposer par produit. Si la facture FA287662 contient les lignes produits 276.00 + 67.80 et affiche "343,80" en sous-total → montant_ht = 343.80. Peut être négatif.
+- montant_ht : base servant au calcul de la commission. Selon le format : (a) relevé par FACTURE = le sous-total HT de la facture ; (b) ÉTAT / RELEVÉ DE COMMISSIONS avec une colonne \"BASE COMM\" ou \"BASE\" (relevés type BOISSET) = prendre la valeur de la colonne BASE COMM (surtout PAS la colonne commission). Jamais le TTC, jamais par produit. Peut être négatif.
 - taux : float (ex: 10.0, 1.5). Si absent : round(commission_ht/montant_ht*100,1).
 - commission_ht : montant RÉEL en float pour la facture entière, même si NON PAYEE. Peut être négatif.
 - IMPORTANT : une entrée JSON = une facture (identifiée par son numéro FA ou n_piece). Ne JAMAIS créer une entrée par ligne produit. Ex: FA287662 avec 2 produits = 1 seule entrée JSON avec montant_ht=343.80, pas 2 entrées à 276.00 et 67.80.
 - statut_paiement : "PAYEE" par défaut (si une commission figure dans le relevé, elle est réglée sauf mention contraire explicite). Mettre "NON PAYEE" uniquement si le document indique explicitement "non payé", "impayé", "à régler" ou équivalent.
 - Exclure lignes de total/sous-total ("Total", "TOTAL", "Majoration", etc.).
+- TOTAL DE CONTRÔLE : si le relevé imprime un total général de commissions (bas de document, ex: "TOTAUX AGENT", "Total", ligne finale), ajoute en TOUT DERNIER une ligne spéciale : {"client":"__TOTAL_RELEVE__","fournisseur":"<nom fournisseur>","commission_ht":<total commission imprimé>,"montant_ht":0,"taux":0,"date":"","n_piece":"","statut_paiement":"","agent_pdf":"","agence":""}. Prends le total de la colonne COMMISSION (pas la base). Si aucun total imprimé, ne pas ajouter cette ligne.
 - UNIQUEMENT le JSON brut, aucun texte avant ou après.`;
 
 // Rendre une page PDF en canvas et retourner le JPEG base64
@@ -740,8 +742,8 @@ async function renderPageToJpeg(pdfPage, scale){
   canvas.width=vp.width;canvas.height=vp.height;
   const ctx=canvas.getContext('2d');
   await pdfPage.render({canvasContext:ctx,viewport:vp}).promise;
-  // Convertir en JPEG (qualité 0.85)
-  const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+  // Convertir en JPEG (qualité élevée pour les tableaux denses)
+  const dataUrl=canvas.toDataURL('image/jpeg',0.92);
   return dataUrl.split(',')[1]; // retourner seulement le base64
 }
 
@@ -853,7 +855,7 @@ async function extractPdf(b64,fn){
   const allItems=[];
   for(let i=0;i<pages.length;i++){
     ss(`  → lecture page ${i+1}/${totalPages}…`,'p');
-    const jpegB64=await renderPageToJpeg(pages[i].page,1.2);
+    const jpegB64=await renderPageToJpeg(pages[i].page,2.0);
     allItems.push(...await callImage(jpegB64));
   }
   return allItems;
@@ -1088,6 +1090,15 @@ async function run(){
     // ────────────────────────────────────────────────────────────────────────
 
     resultRows=[];const stats={'✓':0,'⚠':0,'MULTI':0,'AUCUN':0,'VINOM':0,'IDENT':0};
+    // Totaux de contrôle imprimés sur les relevés (lignes spéciales __TOTAL_RELEVE__)
+    declaredTotals={};
+    for(let i=allComms.length-1;i>=0;i--){
+      if(String(allComms[i].client||'').trim()==='__TOTAL_RELEVE__'){
+        const f=(allComms[i].fournisseur||'—').trim();
+        declaredTotals[f]=(declaredTotals[f]||0)+(parseFloat(allComms[i].commission_ht)||0);
+        allComms.splice(i,1);
+      }
+    }
     allComms.forEach(comm=>{
       const{candidates,status}=matchComm(comm.fournisseur,comm.client,comm.date,comm.montant_ht,comm.n_piece);
       // AGENT = déterminé par le CLIENT (déterministe, mémoïsé), PAS par le candidat rapproché.
@@ -1108,6 +1119,16 @@ async function run(){
       const ag=(a.comm.agent||'—').localeCompare(b.comm.agent||'—');
       if(ag!==0)return ag;
       return (a.comm.client||'').localeCompare(b.comm.client||'');
+    });
+    // ── CONTRÔLE : total extrait vs total imprimé du relevé (par fournisseur) ──
+    const extByF={};
+    resultRows.forEach(({comm})=>{const f=(comm.fournisseur||'—').trim();extByF[f]=(extByF[f]||0)+(comm.commission_ht||0);});
+    Object.keys(declaredTotals).forEach(f=>{
+      const ext=Math.round((extByF[f]||0)*100)/100, dec=Math.round(declaredTotals[f]*100)/100, diff=Math.round((ext-dec)*100)/100;
+      if(Math.abs(diff)>Math.max(0.5,Math.abs(dec)*0.005))
+        warns.push(`⛔ ${f} : total commissions EXTRAIT ${ext.toFixed(2)} € ≠ total IMPRIMÉ sur le relevé ${dec.toFixed(2)} € (écart ${diff.toFixed(2)} €). L'extraction de ce document (scan) n'est PAS fiable : vérifier ligne à ligne ou, mieux, réimporter un export Excel/CSV du relevé.`);
+      else
+        warns.push(`✓ ${f} : total extrait ${ext.toFixed(2)} € = total imprimé ${dec.toFixed(2)} € (rapprochement OK).`);
     });
     sp(90);lastRows=resultRows;renderTable(resultRows);renderStats(stats);
     if(warns.length){const box=document.createElement('div');box.style.cssText='margin-top:10px;background:#FEF9EC;border:1.5px solid #E8C870;border-radius:4px;padding:10px 14px;font-size:11px';box.innerHTML=`<strong>⚠ Points à vérifier</strong><ul style="padding-left:16px;margin-top:4px">${warns.map(w=>`<li>${w}</li>`).join('')}</ul>`;document.getElementById('wa').appendChild(box);}
@@ -1225,8 +1246,13 @@ function dlXLSX(){
   XLSX.utils.book_append_sheet(wb,ws2,'Synthèse par agent');
   // ── Feuille 3 : Synthèse par fournisseur (à rapprocher des relevés) ──
   const Fm=_byFourn();
-  const a3=[['Fournisseur','Nb lignes','Commission calculée (€)','Total relevé fournisseur (€)','Écart (€)']];
-  Object.entries(Fm).sort((x,y)=>y[1].com-x[1].com).forEach(([k,v])=>a3.push([k,v.n,Math.round(v.com*100)/100,'','← à saisir depuis le relevé']));
+  const a3=[['Fournisseur','Nb lignes','Commission calculée (€)','Total imprimé relevé (€)','Écart (€)']];
+  Object.entries(Fm).sort((x,y)=>y[1].com-x[1].com).forEach(([k,v])=>{
+    const calc=Math.round(v.com*100)/100;
+    const dec=declaredTotals[k]!=null?Math.round(declaredTotals[k]*100)/100:'';
+    const ec=dec!==''?Math.round((calc-dec)*100)/100:'← saisir depuis le relevé';
+    a3.push([k,v.n,calc,dec,ec]);
+  });
   const ws3=XLSX.utils.aoa_to_sheet(a3);ws3['!cols']=[24,10,20,22,24].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws3,'Synthèse fournisseurs');
   XLSX.writeFile(wb,`Commissions_VINOM_${_stamp()}.xlsx`);
